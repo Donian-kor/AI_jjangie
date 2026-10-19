@@ -1,0 +1,2862 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>장기AI가 힘을 숨기지 않음 (beta v0.1)</title>
+<style>
+  :root {
+    --bg: #f5efe2;
+    --panel: #fffdf7;
+    --line: #6b4a2b;
+    --wood: #f0dcb0;
+    --cho: #1565c0;
+    --han: #c62828;
+    --accent: #8d6e3a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: #33291c;
+    font-family: "Malgun Gothic", "맑은 고딕", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+  header {
+    width: 100%;
+    max-width: 636px;
+    padding: 12px 8px 4px;
+    text-align: center;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+  /* 버전 딱지 — 제목 옆에 붙여 'beta' 임을 알린다 */
+  h1 .ver {
+    display: inline-block;
+    vertical-align: 3px;
+    margin-left: 7px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0;
+    color: #7a5a1c;
+    background: #f2e2c2;
+    border: 1px solid #e0cb9f;
+  }
+  /* 설정 패널: 대국 / 화면 두 줄로 나눠 보기 좋게 */
+  .panel {
+    background: var(--panel);
+    border: 1px solid #e0d0ac;
+    border-radius: 10px;
+    padding: 8px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .prow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 7px;
+  }
+  .prow + .prow { margin-top: 7px; padding-top: 7px; border-top: 1px dashed #e3d6b6; }
+  .ptag {
+    flex: 0 0 auto;
+    min-width: 34px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: #8d6e3a;
+    color: #fffaf0;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .fld { display: inline-flex; align-items: center; gap: 5px; }
+  .fld > span { font-size: 12px; color: #8d7a5c; }
+  /* 판 크기 조절 단추 ( − 100% + ) */
+  .fld .mini { padding: 4px 9px; font-size: 13px; line-height: 1.2; min-width: 32px; }
+  #zoomVal { min-width: 48px; font-size: 12px; color: #8d7a5c; }
+  /* 체크박스 (초보자 도움) */
+  .chk { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  .chk > span { font-size: 12px; color: #8d7a5c; }
+  .chk input { width: 15px; height: 15px; margin: 0; accent-color: #bf6a00; cursor: pointer; }
+  .spacer { flex: 1 1 auto; min-width: 4px; }
+  .panel select, .panel button {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 6px 7px;
+    border: 1px solid #c9b48c;
+    border-radius: 6px;
+    background: #fffdf7;
+    color: #33291c;
+  }
+  .panel button { cursor: pointer; }
+  .panel button:disabled { opacity: .4; cursor: default; }
+  .panel button:not(:disabled):active { background: #efe3c8; }
+  .btn-main { background: #8d6e3a; border-color: #6b4a2b; color: #fff8e8; font-weight: bold; }
+  .btn-main:not(:disabled):active { background: #6b4a2b; }
+  /* 대국 중 잠긴 설정 */
+  .panel select:disabled { opacity: .45; cursor: not-allowed; background: #f1e9d8; }
+  .locknote {
+    display: none;
+    margin-top: 7px;
+    padding: 5px 9px;
+    border-radius: 6px;
+    background: #fdf1d6;
+    border: 1px solid #e8d3a0;
+    color: #8a6d28;
+    font-size: 12px;
+  }
+  .locknote.on { display: block; }
+  .locknote b { color: #6b4a2b; }
+  #status {
+    margin: 10px 8px 6px;
+    min-height: 24px;
+    font-size: 15px;
+    font-weight: bold;
+    text-align: center;
+  }
+  #status .cho { color: var(--cho); }
+  #status .han { color: var(--han); }
+  #status .hint {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: normal;
+    color: #8d7a5c;
+  }
+  #status .hint.danger { color: #c62828; font-weight: bold; }
+  /* 장군: 빨간 배경판 + 깜빡임 (눈에 확 띄게) */
+  #status.check {
+    display: inline-block;
+    padding: 7px 20px;
+    border-radius: 9px;
+    background: #d32f2f;
+    color: #fff;
+    font-size: 19px;
+    letter-spacing: 2px;
+    text-shadow: 0 1px 2px rgba(0,0,0,.4);
+    animation: checkBlink .62s ease-in-out infinite alternate;
+  }
+  @keyframes checkBlink {
+    from { transform: scale(1); }
+    to   { transform: scale(1.1); }
+  }
+  /* 멍군·승패: 크게 */
+  #status.result {
+    display: inline-block;
+    padding: 9px 24px;
+    border-radius: 10px;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: #fff;
+    background: linear-gradient(#8d6e3a, #6b4a2b);
+    box-shadow: 0 0 0 3px #e8d5ae, 0 6px 18px rgba(0,0,0,.35);
+  }
+  #status.result.lose {
+    background: linear-gradient(#7a4a4a, #5c3232);
+    box-shadow: 0 0 0 3px #e8c4c4, 0 6px 18px rgba(0,0,0,.35);
+  }
+  #status.result.draw {
+    background: linear-gradient(#6b6b7a, #4c4c58);
+    box-shadow: 0 0 0 3px #d7d7e0, 0 6px 18px rgba(0,0,0,.35);
+  }
+  /* 잠깐 뜨는 안내 (예: 장군 중 움직일 수 없는 말을 눌렀을 때) */
+  .tip {
+    min-height: 18px;
+    margin: 0 8px 4px;
+    font-size: 12.5px;
+    color: #9a5b12;
+    text-align: center;
+    opacity: 0;
+    transition: opacity .18s;
+  }
+  .tip.on { opacity: 1; }
+  /* 기물 설명 풍선 — 판 위의 말에 마우스를 올리면 뜬다 */
+  #pieceTip {
+    position: fixed;
+    z-index: 20;
+    max-width: 250px;
+    padding: 7px 10px;
+    border-radius: 9px;
+    background: #fffdf7;
+    border: 1px solid #d8c49a;
+    box-shadow: 0 6px 18px rgba(0,0,0,.22);
+    font-size: 12px;
+    line-height: 1.5;
+    color: #4a3a25;
+    pointer-events: none;
+  }
+  #pieceTip b { color: #8d6e3a; }
+  #pieceTip .pv { color: #b3512a; font-weight: bold; }
+  #pieceTip[hidden] { display: none; }
+  /* 장기판 + 오른쪽 기둥(새 게임·무르기 버튼 + 전적).
+     장기판을 화면 한가운데에 두려고 왼쪽에 오른쪽 기둥과 똑같은 폭의 빈 칸을 둔다.
+     (그래야 판의 한가운데가 화면 한가운데에 온다) */
+  #playArea {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 18px;
+    width: 100%;
+    padding: 0 8px;
+  }
+  #boardBal { flex: 0 0 168px; }
+  /* 창을 줄이는 순간을 대비한 가로 스크롤 안전장치 (판 크기 상한 때문에 실제로는 거의 쓰이지 않는다) */
+  #boardWrap { flex: 1 1 auto; min-width: 0; padding: 0 8px; overflow-x: auto; }
+  #sideCol { flex: 0 0 168px; display: flex; flex-direction: column; gap: 10px; }
+  #actBtns { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
+  #actBtns button {
+    font-family: inherit;
+    font-size: 13.5px;
+    padding: 8px 0;
+    border: 1px solid #c9b48c;
+    border-radius: 8px;
+    background: #fffdf7;
+    color: #33291c;
+    cursor: pointer;
+  }
+  #actBtns button:disabled { opacity: .4; cursor: default; }
+  #actBtns button:not(:disabled):active { background: #efe3c8; }
+  #recordPanel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--panel);
+    border: 1px solid #e0d0ac;
+    border-radius: 10px;
+    padding: 7px 8px 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .recHead {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 5px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #ecdfc2;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #8d6e3a;
+  }
+  #recCount { font-size: 11px; font-weight: normal; letter-spacing: 0; color: #a89372; }
+  #recStats { flex: 0 0 auto; display: flex; justify-content: center; padding: 7px 0 2px; }
+  .recStat { flex: 0 1 96px; text-align: center; }
+  .recStat b { display: block; font-size: 21px; line-height: 1.2; }
+  .recStat span { display: block; font-size: 11px; color: #a89372; }
+  .recStat.win b { color: #1e7a4a; }
+  .recStat.lose b { color: #c62828; }
+  .recStat.draw b { color: #7d6a4c; }
+  .recSub { flex: 0 0 auto; margin: 8px 0 4px; font-size: 11px; letter-spacing: 1px; color: #a89372; }
+  #recRecentWrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  #recRecent {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-content: flex-start;
+  }
+  .recTag { width: 26px; height: 22px; line-height: 20px; text-align: center; border-radius: 5px; font-size: 11.5px; }
+  .recTag.w { background: #e9f3ec; color: #1e7a4a; border: 1px solid #c3ddcb; }
+  .recTag.l { background: #fbedec; color: #c62828; border: 1px solid #ecc9c6; }
+  .recTag.d { background: #f2efe8; color: #7d6a4c; border: 1px solid #ddd2ba; }
+  .capBox { flex: 0 0 auto; }
+  .capRow { display: flex; flex-wrap: wrap; gap: 2px; align-items: center; min-height: 28px; }
+  .capRow img { width: 26px; height: 26px; object-fit: contain; display: block; }
+  /* 한글 표기 모드에서는 잡은 말도 글자로 보여 준다 */
+  .capRow .capChar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    background: #fdf7e8;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1;
+  }
+  .capNone { font-size: 11px; color: #c2b6a6; }
+  #recEmpty { flex: 0 0 auto; padding: 10px 0 8px; font-size: 11.5px; color: #a89372; text-align: center; }
+  #recByLevel { flex: 0 0 auto; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #e3d6b6; }
+  .recLv {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4px;
+    padding: 1px 0;
+    font-size: 11.5px;
+    color: #7d6a4c;
+  }
+  .recLv.cur { color: #33291c; font-weight: bold; }
+  .recLvVal { white-space: nowrap; }
+  .recLvStreak { padding: 0 0 3px; font-size: 10.5px; color: #b3a184; }
+  .recLvStreak.cur { color: #8d6e3a; }
+  .recBtns {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .recBtns button {
+    flex: 1 1 0;
+    padding: 6px 0;
+    font-family: inherit;
+    font-size: 12px;
+    color: #33291c;
+    background: #fffdf7;
+    border: 1px solid #c9b48c;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .recBtns button:disabled { opacity: .4; cursor: default; }
+  .recBtns button:not(:disabled):active { background: #efe3c8; }
+  /* 연승 도전 최고 기록 한 줄 */
+  #recCh { padding: 3px 0 0; font-size: 11.5px; color: #8d6e3a; }
+  #recCh:empty { display: none; }
+  /* ---- 결과 창 · 기보 창 (화면 가운데 뜨는 카드) ---- */
+  #resultBox, #movesBox, #helpBox, #resumeBox, #guardBox {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(45, 33, 16, .46);
+  }
+  #resultBox[hidden], #movesBox[hidden], #helpBox[hidden], #resumeBox[hidden], #guardBox[hidden] { display: none; }
+  #resultBox .resCard, #movesBox .mvCard, #helpBox .hpCard, #resumeBox .resCard, #guardBox .resCard {
+    background: var(--panel);
+    border: 1px solid #e0d0ac;
+    border-radius: 14px;
+    padding: 18px 22px 14px;
+    box-shadow: 0 14px 44px rgba(0,0,0,.38);
+    animation: pop .2s ease-out;
+    max-width: 92vw;
+  }
+  @keyframes pop {
+    from { transform: scale(.92); opacity: .35; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  #resultBox .resCard, #resumeBox .resCard, #guardBox .resCard { text-align: center; }
+  #resTitle { font-size: 24px; font-weight: bold; letter-spacing: 1px; color: #1e7a4a; }
+  #resTitle.lose { color: #c62828; }
+  #resTitle.draw { color: #7d6a4c; }
+  #resSub { margin-top: 7px; font-size: 13px; color: #8d7a5c; }
+  /* 실수 확인 창 */
+  #gdTitle { font-size: 20px; font-weight: bold; letter-spacing: 1px; color: #b3512a; }
+  #gdSub { margin-top: 7px; font-size: 13px; color: #8d7a5c; }
+  /* 이어하기 창 */
+  #rsTitle { font-size: 20px; font-weight: bold; letter-spacing: 1px; color: #6b4a2b; }
+  #rsSub { margin-top: 7px; font-size: 13px; color: #8d7a5c; }
+  #rsNote { margin-top: 11px; font-size: 11.5px; color: #a89372; }
+  .resBtns { margin-top: 16px; display: flex; gap: 8px; justify-content: center; }
+  .resBtns button, .mvFoot button, #hpClose {
+    font-family: inherit;
+    font-size: 13.5px;
+    padding: 8px 15px;
+    border: 1px solid #c9b48c;
+    border-radius: 8px;
+    background: #fffdf7;
+    color: #33291c;
+    cursor: pointer;
+  }
+  .resBtns button:disabled, .mvFoot button:disabled { opacity: .4; cursor: default; }
+  .resBtns button:not(:disabled):active, .mvFoot button:not(:disabled):active { background: #efe3c8; }
+  .resBtns button.btn-main { background: #8d6e3a; border-color: #6b4a2b; color: #fff8e8; font-weight: bold; }
+  .resBtns button.btn-main:active { background: #6b4a2b; }
+  .mvHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 5px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #ecdfc2;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #8d6e3a;
+  }
+  #mvCount { font-size: 11px; font-weight: normal; letter-spacing: 0; color: #a89372; }
+  .mvNote { font-size: 11px; color: #a89372; margin-bottom: 6px; }
+  #mvList { max-height: 52vh; overflow-y: auto; min-width: 262px; }
+  .mvRow { display: flex; gap: 8px; padding: 2px 0; font-size: 12.5px; color: #4a3a25; }
+  .mvNo { flex: 0 0 26px; text-align: right; color: #a89372; }
+  .mvWho { flex: 0 0 18px; font-weight: bold; }
+  .mvWho.cho { color: var(--cho); }
+  .mvWho.han { color: var(--han); }
+  .mvText { flex: 1 1 auto; white-space: nowrap; }
+  #mvEmpty { padding: 10px 0 6px; font-size: 12px; color: #a89372; text-align: center; }
+  #hpClose { margin-top: 10px; width: 100%; }
+  /* 기보 창 아래 단추 줄 (복사 · 저장 · 복기 · 닫기) */
+  .mvFoot { margin-top: 10px; display: flex; gap: 6px; }
+  .mvFoot button { flex: 1 1 0; }
+  /* 기보 되짚어보기: 수를 누르면 그 장면을 보여 주고 ◀ ▶ 로 넘긴다 */
+  .mvRow.clickable { cursor: pointer; }
+  .mvRow.cur { background: #f6ecd3; border-radius: 6px; }
+  #mvStep { margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+  #mvStep[hidden], #mvRestart[hidden] { display: none; }
+  #mvStepTxt { flex: 1 1 auto; text-align: center; font-size: 12px; color: #8d6e3a; }
+  #mvStep button, #mvRestart {
+    font-family: inherit;
+    font-size: 12.5px;
+    padding: 5px 10px;
+    border: 1px solid #c9b48c;
+    border-radius: 8px;
+    background: #fffdf7;
+    color: #33291c;
+    cursor: pointer;
+  }
+  #mvStep button:disabled { opacity: .4; cursor: default; }
+  #mvStep button:not(:disabled):active, #mvRestart:active { background: #efe3c8; }
+  #mvRestart { margin-top: 6px; width: 100%; }
+  /* 복기(엔진 되짚기) 표시 */
+  .mvEval { flex: 0 0 auto; margin-left: 2px; font-size: 11.5px; color: #a89372; }
+  .mvEval.plus { color: #1e7a4a; }
+  .mvEval.minus { color: #b3512a; }
+  .mvBadge { flex: 0 0 auto; padding: 0 6px; border-radius: 999px; font-size: 10.5px; font-weight: bold; line-height: 16px; }
+  .mvBadge.miss { color: #8d6e3a; background: #f6ecd3; border: 1px solid #e5d3a8; }
+  .mvBadge.big { color: #a5352c; background: #fbe9e4; border: 1px solid #efc7bb; }
+  .mvBetter { padding: 0 0 4px 60px; font-size: 11px; color: #4a7a35; }
+  /* ---- 도움말 창 ---- */
+  #helpBox .hpCard { width: 470px; padding: 16px 20px 12px; }
+  #hpBody { max-height: 60vh; overflow-y: auto; padding-right: 4px; }
+  #hpBody h3 {
+    margin: 13px 0 5px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #ecdfc2;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: #8d6e3a;
+  }
+  #hpBody h3:first-child { margin-top: 0; }
+  #hpBody ul { margin: 0; padding-left: 16px; }
+  #hpBody li { margin: 3px 0; font-size: 12.5px; line-height: 1.55; color: #4a3a25; }
+  #hpBody em { font-style: normal; font-weight: bold; color: #8d6e3a; }
+  #hpBody .hpKey { display: inline-block; min-width: 58px; font-weight: bold; color: #33291c; }
+  #helpBox .hpFoot { margin-top: 8px; font-size: 11px; color: #a89372; text-align: center; }
+  #helpBox .mvHead span:last-child { font-size: 11px; font-weight: normal; letter-spacing: 0; color: #a89372; }
+  /* 화면이 좁으면 전적을 판 아래로 내린다 */
+  @media (max-width: 700px) {
+    #playArea { flex-wrap: wrap; }
+    #boardBal { display: none; }
+    #boardWrap { flex: 1 1 100%; }
+    #sideCol { flex: 1 1 100%; }
+  }
+  /* '움직임 줄이기'를 켠 분에게는 깜빡임·번쩍임 장식을 쓰지 않는다 */
+  @media (prefers-reduced-motion: reduce) {
+    #status.check, canvas.flash,
+    #resultBox .resCard, #movesBox .mvCard, #helpBox .hpCard,
+    #resumeBox .resCard, #guardBox .resCard { animation: none; }
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    touch-action: manipulation;
+  }
+  /* 장군 연출: 판이 잠깐 붉게 번쩍이고 흔들린다 */
+  @keyframes checkFlash {
+    from { box-shadow: 0 0 0 3px rgba(211, 47, 47, .95), 0 0 0 16px rgba(211, 47, 47, .40); }
+    to   { box-shadow: 0 0 0 3px rgba(211, 47, 47, 0), 0 0 0 32px rgba(211, 47, 47, 0); }
+  }
+  @keyframes checkShake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-5px, 2px); }
+    40% { transform: translate(5px, -2px); }
+    60% { transform: translate(-4px, -1px); }
+    80% { transform: translate(4px, 1px); }
+  }
+  canvas.flash { animation: checkFlash .8s ease-out, checkShake .45s ease-out; }
+  footer {
+    margin: 12px 0 20px;
+    font-size: 11px;
+    color: #8d7a5c;
+    text-align: center;
+    line-height: 1.7;
+  }
+  footer .credit a { color: #6b4a2b; }
+</style>
+</head>
+<body>
+<header>
+  <h1>장기AI가 힘을 숨기지 않음 <span class="ver">beta v0.1</span></h1>
+  <div class="panel">
+    <div class="prow">
+      <span class="ptag">대국</span>
+      <label class="fld"><span>내 색</span>
+        <select id="sideSel" title="내가 둘 말의 색을 고릅니다. 어느 쪽이든 내 말은 아래에 놓입니다">
+          <option value="C" selected>파랑 (초·楚)</option>
+          <option value="H">빨강 (한·漢)</option>
+        </select>
+      </label>
+      <label class="fld"><span>상대</span>
+        <select id="oppSel" title="AI 와 둘지, 같은 화면에서 사람끼리 둘지 고릅니다">
+          <option value="ai" selected>AI</option>
+          <option value="human">사람 (2인용)</option>
+        </select>
+      </label>
+      <label class="fld"><span>난이도</span>
+        <select id="levelSel">
+          <option value="1">초보</option>
+          <option value="2">중급</option>
+          <option value="3">고수</option>
+          <option value="4" selected>최강 (전력)</option>
+        </select>
+      </label>
+      <label class="fld"><span>차림</span>
+        <select id="layoutSel">
+          <option value="masangsangma" selected>마상상마</option>
+          <option value="sangmamasang">상마마상</option>
+          <option value="masangmasang">마상마상</option>
+          <option value="sangmasangma">상마상마</option>
+        </select>
+      </label>
+    </div>
+    <div class="prow">
+      <span class="ptag">화면</span>
+      <label class="fld"><span>말</span>
+        <select id="pieceSel">
+          <option value="kakao" selected>카카오</option>
+          <option value="wood">목재</option>
+        </select>
+      </label>
+      <label class="fld"><span>보드</span>
+        <select id="boardSel">
+          <option value="brown" selected>갈색</option>
+          <option value="basic">기본</option>
+          <option value="orange">오렌지</option>
+          <option value="wood">나무</option>
+          <option value="dark">짙은 나무</option>
+          <option value="stone">돌</option>
+        </select>
+      </label>
+      <span class="fld"><span>판 크기</span>
+        <button id="zoomOut" class="mini" type="button" title="판을 작게 (10%씩)">−</button>
+        <button id="zoomVal" type="button" title="누르면 100%로 돌아갑니다">100%</button>
+        <button id="zoomIn" class="mini" type="button" title="판을 크게 (창에 꽉 찰 때까지)">+</button>
+      </span>
+      <label class="chk" title="초보자 도움: 말 설명 풍선(기물 가치 포함) · 장군 시 방어 링 · 잡힐 말 표시 · 외통수 경고"><input type="checkbox" id="hintSel"> <span>초보자 도움</span></label>
+      <label class="chk"><input type="checkbox" id="soundSel" checked> <span>소리</span></label>
+      <label class="chk" title="켜 두면 창을 닫아도 판이 저장되어 다음에 이어서 둘 수 있습니다"><input type="checkbox" id="resumeSel" checked> <span>이어하기</span></label>
+      <label class="chk" title="실수 확인: 크게 손해 보는 수를 두기 전에 엔진이 살펴보고 한 번 물어봅니다 (기본 꺼짐)"><input type="checkbox" id="guardSel"> <span>실수 확인</span></label>
+      <label class="chk" title="연승 도전: 초보(1단계)부터 시작해 이길 때마다 난이도가 올라갑니다. 지거나 비기면 도전이 끝납니다"><input type="checkbox" id="challengeSel"> <span>연승 도전</span></label>
+      <span class="spacer"></span>
+      <button id="langBtn" title="한자 표기와 한글 표기를 바꿉니다">한글 표기</button>
+      <button id="helpBtn" title="두는 방법과 규칙을 봅니다">도움말</button>
+    </div>
+    <div class="locknote" id="lockNote">대국 중에는 진영·상대·난이도·차림을 바꿀 수 없습니다. 바꾸려면 <b>새 게임</b>을 누르세요.</div>
+  </div>
+</header>
+
+<div id="status" aria-live="polite"></div>
+<div id="tip" class="tip"></div>
+<div id="pieceTip" hidden></div>
+<div id="playArea">
+  <div id="boardBal"></div>
+  <div id="boardWrap"><canvas id="board" role="img" aria-label="장기판"></canvas></div>
+  <div id="sideCol">
+    <div id="actBtns">
+      <button id="newBtn" class="btn-main" title="새 대국을 시작합니다">새 게임</button>
+      <button id="undoBtn" title="마지막 수를 되돌립니다 (AI 대국은 한 쌍)">무르기</button>
+      <button id="hintBtn" title="엔진에게 내 최선의 수를 묻습니다">힌트</button>
+      <button id="movesBtn" title="두었던 수를 되돌아봅니다">기보</button>
+    </div>
+    <div id="recordPanel">
+      <div class="recHead"><span>전적</span><span id="recCount"></span></div>
+      <div id="recStats">
+        <div class="recStat win"><b id="recWin">0</b><span>승</span></div>
+        <div class="recStat lose"><b id="recLose">0</b><span>패</span></div>
+        <div class="recStat draw"><b id="recDraw">0</b><span>무</span></div>
+      </div>
+      <div id="recRecentWrap">
+        <div class="recSub">최근 결과</div>
+        <div id="recRecent"></div>
+      </div>
+      <div class="capBox">
+        <div class="recSub" id="capMineLbl">내가 잡은 말</div>
+        <div id="capMine" class="capRow"></div>
+      </div>
+      <div class="capBox">
+        <div class="recSub" id="capLostLbl">내가 잃은 말</div>
+        <div id="capLost" class="capRow"></div>
+      </div>
+      <div id="recEmpty">이 난이도는 아직 둔 판이 없습니다</div>
+      <div id="recByLevel">
+        <div class="recSub">난이도별 전적</div>
+        <div id="recLvList"></div>
+        <div id="recCh"></div>
+      </div>
+      <div class="recBtns">
+        <button id="recReset" type="button" title="모든 난이도의 전적을 지웁니다">기록 지우기</button>
+        <button id="recExport" type="button" title="전적과 설정을 파일로 저장합니다">내보내기</button>
+        <button id="recImport" type="button" title="내보낸 전적 파일을 불러옵니다">가져오기</button>
+      </div>
+      <input type="file" id="recImportFile" accept=".json,application/json" hidden>
+    </div>
+  </div>
+</div>
+
+<!-- 대국 결과 (승리·패배·무승부) -->
+<div id="resultBox" hidden>
+  <div class="resCard">
+    <div id="resTitle">승리했습니다!</div>
+    <div id="resSub"></div>
+    <div class="resBtns">
+      <button id="rsNext" class="btn-main" type="button" title="다음 난이도로 연승 도전을 이어갑니다" hidden>다음 단계</button>
+      <button id="resUndo" type="button" title="마지막 수를 되돌립니다">무르기</button>
+      <button id="resNew" class="btn-main" type="button" title="새 대국을 시작합니다">새 게임</button>
+      <button id="resClose" type="button" title="결과 창을 닫습니다">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 실수 확인: 크게 손해 보는 수를 두기 전에 한 번 물어본다 -->
+<div id="guardBox" hidden>
+  <div class="resCard">
+    <div id="gdTitle">잠깐만요</div>
+    <div id="gdSub"></div>
+    <div class="resBtns">
+      <button id="gdCancel" class="btn-main" type="button" title="방금 둔 수를 되돌립니다">되돌리기</button>
+      <button id="gdGo" type="button" title="실수를 인정하고 그대로 진행합니다">그대로 두기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이어하기: 지난 판이 저장되어 있으면 이어서 둘지 묻는다 -->
+<div id="resumeBox" hidden>
+  <div class="resCard">
+    <div id="rsTitle">이어서 두시겠습니까?</div>
+    <div id="rsSub"></div>
+    <div class="resBtns">
+      <button id="rsContinue" class="btn-main" type="button" title="저장된 판을 이어서 둡니다">이어서 두기</button>
+      <button id="rsDiscard" type="button" title="저장된 판을 버리고 새 판을 시작합니다">새로 시작</button>
+    </div>
+    <div id="rsNote">새로 시작하면 지난 판은 패로 기록됩니다</div>
+  </div>
+</div>
+
+<!-- 기보(수순) -->
+<div id="movesBox" hidden>
+  <div class="mvCard">
+    <div class="mvHead"><span>기보</span><span id="mvCount"></span></div>
+    <div class="mvNote" id="mvNote">좌표는 초(楚) 기준 · 수를 누르면 그 장면을 봅니다</div>
+    <div id="mvList"></div>
+    <div id="mvStep" hidden>
+      <button id="mvPrev" type="button" title="한 수 전으로">◀</button>
+      <span id="mvStepTxt"></span>
+      <button id="mvNext" type="button" title="한 수 뒤로">▶</button>
+      <button id="mvLast" type="button" title="지금 국면으로 돌아갑니다">최신</button>
+    </div>
+    <button id="mvRestart" type="button" hidden title="이 국면을 새 판으로 이어서 둡니다">이 자리부터 다시 두기</button>
+    <div class="mvFoot">
+      <button id="mvCopy" type="button" title="기보를 글자로 복사합니다">복사</button>
+      <button id="mvSave" type="button" title="기보를 텍스트 파일로 저장합니다">저장</button>
+      <button id="mvReview" type="button" title="엔진이 끝난 판을 되짚어 아쉬웠던 수를 짚어 줍니다">복기</button>
+      <button id="mvClose" type="button" title="기보 창을 닫습니다">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 도움말 -->
+<div id="helpBox" hidden>
+  <div class="hpCard">
+    <div class="mvHead"><span>도움말</span><span>beta v0.1</span></div>
+    <div id="hpBody">
+      <h3>두는 방법</h3>
+      <ul>
+        <li>내 말은 언제나 판의 <em>아래쪽</em>에 있습니다. 내 말을 한 번 누르고, 갈 곳을 누르면 그 자리로 갑니다.</li>
+        <li><em>사람끼리</em> 대국(2인용)에서는 아래쪽(초·파랑)부터 번갈아 두면 됩니다. AI 는 두지 않습니다.</li>
+        <li>말을 고르면 갈 수 있는 자리에 표시가 나타납니다. 같은 말을 다시 누르면 고르기가 풀립니다.</li>
+        <li><em>초보자 도움</em>을 켜면, 판 위의 말에 마우스를 올렸을 때 그 말의 움직임 설명과 기물 가치가 작은 풍선으로 뜹니다.</li>
+        <li>차례·장군(체크)·결과는 판 위의 안내 줄에 나옵니다.</li>
+        <li>대국이 시작된 뒤에는 내 색·상대·난이도·차림을 바꿀 수 없습니다. 바꾸려면 <em>새 게임</em>을 누르세요.</li>
+      </ul>
+
+      <h3>이기고 지는 법</h3>
+      <ul>
+        <li>상대의 <em>장(將)</em>을 잡으면 이깁니다.</li>
+        <li>상대가 둘 수 있는 수가 하나도 없으면(멍군) 이깁니다.</li>
+        <li>같은 국면이 세 번 반복되면 무승부입니다.</li>
+        <li>장군을 불러 놓으면 안내 줄이 붉게 깜빡이고, 걸린 장 위에 붉은 표시가 나타나며 판이 잠깐 번쩍입니다. <em>초보자 도움</em>을 켜면 막을 수 있는 말도 표시됩니다.</li>
+      </ul>
+
+      <h3>말의 움직임</h3>
+      <ul>
+        <li><span class="hpKey">차(車)</span>앞·뒤·옆으로 멀리까지 갑니다. 궁성의 ✕ 선도 탈 수 있습니다.</li>
+        <li><span class="hpKey">포(包)</span>다른 말 하나를 넘어야만 갈 수 있고, 포끼리는 잡지 못합니다. 넘지 않고는 한 칸도 못 갑니다.</li>
+        <li><span class="hpKey">마(馬)</span>한 칸 곧게 간 뒤 대각선으로 꺾습니다. 가는 길(다리)에 말이 있으면 못 갑니다.</li>
+        <li><span class="hpKey">상(象)</span>한 칸 곧게 간 뒤 대각선으로 두 칸 꺾습니다. 중간 두 칸이 비어 있어야 합니다.</li>
+        <li><span class="hpKey">사(士)</span>와 <span class="hpKey">장(將)</span>은 궁성(✕ 표시) 안에서만 움직입니다.</li>
+        <li><span class="hpKey">졸(卒)</span>·<span class="hpKey">병(兵)</span>은 앞과 옆으로 한 칸. 뒤로는 못 가며, 상대 궁성의 ✕ 선 위에서는 대각선으로도 갑니다.</li>
+        <li>두 장(將)이 같은 줄에서 마주 보게 되는 수는 둘 수 없습니다(빅장).</li>
+      </ul>
+
+      <h3>단추 안내</h3>
+      <ul>
+        <li><span class="hpKey">새 게임</span>새 판을 시작합니다. 지금까지 둔 판은 끝난 것으로 기록됩니다.</li>
+        <li><span class="hpKey">무르기</span>마지막 수를 되돌립니다. AI 대국에서는 내 수와 AI 수가 한 쌍으로, 사람끼리 대국에서는 한 수씩 돌아갑니다.</li>
+        <li><span class="hpKey">힌트</span>AI가 보기에 좋은 수를 판 위에 표시해 줍니다.</li>
+        <li><span class="hpKey">초보자 도움</span>켜면 ① 말에 마우스를 올렸을 때 움직임 설명과 기물 가치가 뜨고, ② 장군일 때 막을 수 있는 말에 주황 링이, ③ 다음 수에 잡힐 수 있는 내 말에 주황 점이 표시되며, ④ 상대가 외통수를 노리기 시작하면 안내 줄이 알려 줍니다. 기본은 꺼짐입니다.</li>
+        <li><span class="hpKey">실수 확인</span>켜면 크게 손해 보는 수를 두려 할 때 엔진이 살펴보고 "약 4.2점만큼 손해일 수 있습니다. 그래도 둘까요?" 하고 한 번 물어봅니다. 기본은 꺼짐입니다.</li>
+        <li><span class="hpKey">연승 도전</span>초보(1단계)부터 시작해 이길 때마다 난이도가 올라갑니다. 지거나 비기면 도전이 끝나고, 최고 도달 단계는 전적에 남습니다.</li>
+        <li><span class="hpKey">상대</span>AI 와 둘지, 같은 화면에서 <em>사람끼리</em> 둘지 고릅니다. 사람끼리 대국에서는 내 색·난이도를 쓰지 않고, 결과도 전적에 남지 않습니다.</li>
+        <li><span class="hpKey">기보</span>지금까지 둔 수순을 창으로 봅니다. 창에서 <em>복사</em>(글자로 복사)와 <em>저장</em>(텍스트 파일)을 할 수 있습니다. 대국이 끝나면 <em>복기</em>를 눌러 엔진이 수마다 되짚어 <em>아쉬웠던 수</em>와 대신 둘 수를 짚어 줍니다. 수 옆의 숫자는 그 수를 둔 쪽이 얼마나 유리한지를 나타냅니다(엔진 평가). <b>수를 누르면</b> 그 장면이 판에 나타나고, ◀ ▶ 로 한 수씩 넘겨 볼 수 있습니다. 끝난 판은 <em>이 자리부터 다시 두기</em>로 그 국면부터 새로 둘 수 있습니다.</li>
+        <li><span class="hpKey">판 크기</span>−/+ 로 판을 10%씩 줄이거나 키웁니다. 100% 가 창에 꽉 차는 최대 크기이고, 가운데 숫자를 누르면 100% 로 돌아옵니다.</li>
+        <li><span class="hpKey">한글 표기</span>말의 글자를 한글 ↔ 한자로 바꿉니다. 잡은 말 표시도 함께 바뀝니다.</li>
+        <li><span class="hpKey">소리</span>두는 소리·잡는 소리·장군 소리·결과 소리를 켜고 끕니다.</li>
+        <li><span class="hpKey">이어하기</span>켜 두면 창을 닫아도 판이 저장되어, 다음에 열 때 <em>이어서 두기</em>를 고를 수 있습니다. 끄면 창을 닫을 때 패로 기록됩니다(닫기 전에 물어봅니다).</li>
+        <li><span class="hpKey">도움말</span>이 창을 다시 엽니다.</li>
+      </ul>
+
+      <h3>전적</h3>
+      <ul>
+        <li>오른쪽 전적에 승·패·무가 <em>난이도별로</em> 쌓입니다. 표에서 난이도마다 따로 볼 수 있습니다.</li>
+        <li>난이도별 전적에는 <em>최고 연승</em>과 <em>승률</em>도 함께 나옵니다.</li>
+        <li>사람끼리 대국은 전적에 기록되지 않습니다.</li>
+        <li><em>새 게임</em>으로 그만둔 판과, 이어하기가 꺼진 채로 창을 닫거나 새로고침한 판은 패로 기록됩니다.</li>
+        <li>이어하기가 켜져 있으면 창을 닫아도 판이 저장되어, 다음에 열 때 <em>이어서 두기</em>를 고를 수 있습니다. 그만두면 패가 됩니다.</li>
+        <li>잡은 말·잃은 말은 판마다 새로 계산해 보여 줍니다.</li>
+        <li><em>기록 지우기</em>를 누르면 모든 난이도의 전적이 지워집니다.</li>
+        <li><em>내보내기</em>·<em>가져오기</em>로 전적과 설정을 파일 하나(JSON)에 저장했다가 다른 컴퓨터나 브라우저에서 되살릴 수 있습니다.</li>
+        <li><em>연승 도전</em>의 최고 도달 단계도 전적 아래에 남습니다.</li>
+      </ul>
+
+      <h3>이 프로그램</h3>
+      <ul>
+        <li>AI는 <em>Fairy-Stockfish</em>(오픈소스 장기·변형 체스 엔진)를 브라우저 단일 스레드 WebAssembly로 돌립니다.</li>
+        <li>인터넷 연결 없이 파일만 열어도 동작합니다.</li>
+      </ul>
+    </div>
+    <button id="hpClose" type="button" title="도움말 창을 닫습니다">닫기</button>
+    <div class="hpFoot">Esc 키를 누르거나 창 바깥을 누르면 닫힙니다</div>
+  </div>
+</div>
+
+<footer>
+  장기 AI 엔진: Fairy-Stockfish — 브라우저 단일 스레드 WebAssembly 판<br>
+  <span class="credit">
+    <a href="https://github.com/fairy-stockfish/Fairy-Stockfish" target="_blank" rel="noopener">Fairy-Stockfish</a>
+    (Fabian Fichter 외, GPL-3.0) ·
+    <a href="https://github.com/fairy-stockfish/fairy-stockfish.wasm" target="_blank" rel="noopener">WebAssembly 판</a>
+    · 소스·빌드: third_party/fairy-stockfish/
+  </span><br>
+  <span class="credit">
+    말·보드 이미지:
+    <a href="https://github.com/Kadagaden/chess-pieces" target="_blank" rel="noopener">Kadagaden/chess-pieces</a>
+    (CC-BY-4.0) · 라이선스 전문: assets/LICENSE-chess-pieces.txt
+  </span>
+</footer>
+
+<!-- 규칙·AI 를 고치면 아래 ?v= 숫자를 올려야 한다. 안 올리면 브라우저가 옛 파일을 그대로 쓴다 -->
+<script src="janggi.js?v=7"></script>
+<script src="fs-engine.js?v=4"></script>
+<script src="ai.js?v=3"></script>
+<script src="assets/pieces-kakao.js?v=1"></script>
+<script>
+(function () {
+  'use strict';
+  const J = Janggi;
+
+  // ---- 상태 ----
+  let game = new J.Game();
+  let humanSide = J.CHO;
+  let vsHuman = false;          // true = 사람끼리 대국(2인용). AI 를 부르지 않는다
+  let level = 2;
+  let selected = null;          // {r, c}
+  let selectedMoves = [];       // 선택 기물의 합법 수
+  let thinking = false;
+  let lang = 'hanja';           // 기물 표기: 'hanja'(한자) | 'hangul'(한글)
+  let hintMove = null;          // 힌트(추천 수) — 점선 원으로 보여 준다
+  let hintBusy = false;         // 힌트를 찾는 중
+  let aiToken = 0;              // 오래된 AI 계산 무효화용
+  let resumeOn = true;          // '이어하기'(자동 저장) 켜짐 여부 — 설정에서 바꾼다
+  let guardOn = false;          // '실수 확인': 크게 손해 보는 수를 두기 전에 한 번 묻는다 (기본 꺼짐)
+  let challenge = false;        // '연승 도전': 이기면 난이도가 올라간다
+  let chStage = 1;              // 연승 도전 단계 (1~4)
+  let chBest = 0;               // 연승 도전 최고 도달 단계 (전적에 남긴다)
+
+  // ---- 말 색 ------------------------------------------------------------
+  // 장기 말 색은 전통색 고정이다: 초(楚)=파랑, 한(漢)=빨강.
+  // '내 색' 선택은 어느 쪽을 맡을지만 고를 뿐 색을 바꾸지 않는다.
+  // 판은 언제나 내 말이 아래, 상대가 위에 오도록 그린다(아래 toScreen 참고).
+  function sideColor(side) {
+    return side === J.CHO ? '#1565c0' : '#c62828';
+  }
+
+  // 내가 둔 수 개수. 설정 잠금 기준이 된다(아래 syncSettingsLock 참고).
+  let humanMoves = 0;
+
+  // ---- 대국 설정 잠금 ---------------------------------------------------
+  // '내가' 한 수라도 두었거나 대국이 끝났으면 진영·난이도·차림을 잠근다.
+  // (바꿀 때마다 새 게임이 시작되어 진행 중이던 대국이 날아가기 때문이다)
+  //
+  // 참고: 한(漢·빨강)을 고르면 초가 선공이라 상대가 먼저 한 수를 둔다.
+  // 그 한 수로 잠가 버리면 차림을 고를 수 없게 되므로, 내 수가 아직 없으면 열어 둔다.
+  function syncSettingsLock() {
+    const locked = humanMoves > 0 || !!game.result;
+    // 사람끼리 대국에서는 '내 색'과 '난이도'를 쓰지 않는다 (아래쪽이 초로 고정된다)
+    sideSel.disabled = locked || vsHuman;
+    levelSel.disabled = locked || vsHuman || challenge;   // 연승 도전 중에는 난이도가 자동으로 정해진다
+    layoutSel.disabled = locked;
+    oppSel.disabled = locked;
+    lockNote.className = 'locknote' + (locked ? ' on' : '');
+    syncDefenseHints();
+    syncDangerMarks();
+  }
+
+  // 장군 중에는 '지금 움직일 수 있는 내 말'을 계산해 둔다 (그릴 때만 쓴다).
+  // 한 번도 둔 말이 없고 내 차례일 때만 계산하므로 부하가 무시할 만하다.
+  function syncDefenseHints() {
+    defenseHints = [];
+    if (!beginnerHelp) return;                  // 초보자 도움이 꺼져 있으면 표시하지 않는다
+    if (!game.check || game.result) return;
+    if (!vsHuman && game.turn !== humanSide) return;   // 사람끼리는 걸린 쪽 차례에 보여 준다
+    const seen = new Set();
+    for (const m of game.moves()) {
+      const key = m.fr + ',' + m.fc;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      defenseHints.push([m.fr, m.fc]);
+    }
+  }
+
+  // 초보자 도움: 다음 수에 상대에게 잡힐 수 있는 내 말을 계산해 둔다.
+  // '값어치보다 싼 말에게 잡히거나(예: 졸이 차를 노림), 아무도 지켜 주지 않는 말'을 표시한다.
+  // 지켜 주는지 여부는 '내가 그 자리를 되잡을 수 있는가'로 간단히 본다.
+  let dangerMarks = [];                          // [[r, c], ...] — 주황 점을 찍을 자리
+  function syncDangerMarks() {
+    dangerMarks = [];
+    if (!beginnerHelp || game.result) return;
+    if (!vsHuman && game.turn !== humanSide) return;   // 내가 둘 차례일 때만 알려 준다
+    const b = game.board, me = game.turn, foe = J.other(me);
+    const defended = {};
+    for (const m of J.legalMoves(b, me)) defended[m.tr + ',' + m.tc] = true;
+    const mark = {};
+    for (const m of J.legalMoves(b, foe)) {
+      const t = b[m.tr][m.tc];
+      if (!t || t.side !== me || t.type === 'K') continue;   // 장은 장군 표시가 따로 있다
+      const att = b[m.fr][m.fc];
+      const worth = PIECE_VALUE[t.type] || 0;
+      const cheap = PIECE_VALUE[att ? att.type : ''] || 0;
+      const undefended = !defended[m.tr + ',' + m.tc];
+      if ((undefended && worth >= 3) || worth - cheap >= 3) mark[m.tr + ',' + m.tc] = true;
+    }
+    for (const k in mark) {
+      const p = k.split(',');
+      dangerMarks.push([parseInt(p[0], 10), parseInt(p[1], 10)]);
+    }
+  }
+
+  // ---- 디자인(말·보드 이미지) -------------------------------------------
+  // 출처: https://github.com/Kadagaden/chess-pieces (CC-BY-4.0)
+  const BOARD_FILE = {
+    orange: 'assets/boards/JanggiOrange.svg',
+    wood: 'assets/boards/JanggiWood.svg',
+    dark: 'assets/boards/JanggiWoodDark.svg',
+    brown: 'assets/boards/JanggiBrown.svg',
+    stone: 'assets/boards/JanggiStone.svg',
+  };
+  // 우리 기물 문자 → 저장소 파일명
+  const PIECE_FILE = { R: 'chariot', N: 'horse', E: 'elephant', C: 'cannon', G: 'advisor', K: 'king', P: 'pawn' };
+
+  // 마지막 수 표시(지나온 자리·도착 자리)에 쓰는 색.
+  // 보드마다 바탕이 다라 하나의 회색으로 통일하면 돌판에서 완전히 묻힌다.
+  // 밝은 판에는 어두운 남색(차가운 색이라 나무색 판에서도 분리된다),
+  // 어두운 짙은 나무 판에는 밝은 크림색을 쓴다.
+  const MARK_INK = {
+    basic: [32, 62, 118],
+    brown: [32, 62, 118],
+    orange: [24, 46, 100],
+    wood: [32, 62, 118],
+    stone: [22, 50, 106],
+    dark: [255, 252, 246],
+  };
+  function markInk(a) {
+    const c = MARK_INK[boardDesign] || MARK_INK.brown;
+    return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
+  }
+
+  let pieceDesign = 'basic';
+  let boardDesign = 'basic';
+  const imgCache = {};                       // url → 이미지 (없으면 로딩 중/실패)
+  // 장군 중 '방어에 쓸 수 있는 내 말' 좌표. 상태가 바뀔 때만 다시 계산한다.
+  // (매 프레임 legalMoves 를 돌리면 화면이 멈춘다)
+  let defenseHints = [];
+
+  function assetImg(url) {
+    if (!(url in imgCache)) {
+      const im = new Image();
+      im.onload = refresh;                    // 늦게 로딩돼도 다시 그린다
+      im.src = url;
+      imgCache[url] = im;
+    }
+    const im = imgCache[url];
+    return (im.complete && im.naturalWidth > 0) ? im : null;
+  }
+
+  // 카카오 세트는 원본 SVG 를 색만 바꿔 data: URI 로 그린다 → '내 말 색' 이 그대로 통한다
+  // (file:// 에서는 fetch 가 막혀 SVG 원본을 읽어올 수 없으므로 JS 에 내장해 둔다)
+  //
+  // 반드시 캐시해야 한다. 매 프레임마다 6KB SVG 를 인코딩하면
+  // 장군 표시로 화면이 매 프레임 다시 그려질 때 CPU 를 다 먹고 화면이 멈춘다.
+  const kakaoUriCache = {};
+  function kakaoUrl(type, color) {
+    const svg = (window.JANGGI_KAKAO_SVG || {})[type];
+    if (!svg) return null;
+    const key = type + '|' + color;
+    if (!(key in kakaoUriCache)) {
+      kakaoUriCache[key] = 'data:image/svg+xml;charset=utf-8,' +
+        encodeURIComponent(svg.replace(/%COLOR%/g, color));
+    }
+    return kakaoUriCache[key];
+  }
+  function pieceUrl(pc) {
+    if (pieceDesign === 'wood') {
+      return 'assets/pieces/' + (pc.side === J.CHO ? 'blue' : 'red') + '_' + PIECE_FILE[pc.type] + '.svg';
+    }
+    // 카카오 세트는 장·병 글자가 진영 구분 없이 '한(漢)·兵' 으로 박혀 있다 (원본 세트 그대로).
+    return kakaoUrl(pc.type, sideColor(pc.side));
+  }
+  let engine = null;            // Fairy-Stockfish 핸들 (null 이면 내장 AI 사용)
+  let engineState = 'loading';  // 'loading' | 'ready' | 'off'
+
+  const canvas = document.getElementById('board');
+  const ctx = canvas.getContext('2d');
+  const playAreaEl = document.getElementById('playArea');
+  const statusEl = document.getElementById('status');
+  const undoBtn = document.getElementById('undoBtn');
+  const hintBtnEl = document.getElementById('hintBtn');
+  const sideSel = document.getElementById('sideSel');
+  const levelSel = document.getElementById('levelSel');
+  const layoutSel = document.getElementById('layoutSel');
+  const oppSel = document.getElementById('oppSel');
+  
+  const lockNote = document.getElementById('lockNote');
+  const tipEl = document.getElementById('tip');
+  const pieceTipEl = document.getElementById('pieceTip');
+
+  let cell = 48, pad = 26, flipped = false;
+  let zoomPct = 100;            // 판 크기 설정 (60~100%, 10%씩). 100% 가 창에 맞는 최대 크기
+
+  // ---- 애니메이션 ----------------------------------------------------
+  // anim : { move, pc, cap, t0, dur, done } — pc 를 출발점→도착점으로 밀어 보낸다
+  let anim = null;
+  let rafId = 0;
+  // ---- 기보 되짚어보기(리플레이) ----
+  // 보는 중이면 판은 그 옛 국면을 그린다 (game 상태는 건드리지 않는다). null 이면 실시간.
+  let viewState = null;         // { board, lastMove, turn }
+  let replayIdx = -1;           // 보고 있는 수 번호 (0 = 시작 국면, -1 = 실시간)
+  const REDUCE_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const MOVE_MS = REDUCE_MOTION ? 0 : 190;
+
+  // 이동 애니메이션이 돌 때만 프레임을 계속 돌린다.
+  // (장군 중엔 연속 재그리드를 하지 않는다 — 깜빡일 게 없고, CPU 만 낭비된다)
+  function ensureLoop() {
+    if (rafId) return;
+    const loop = () => {
+      rafId = 0;
+      const running = anim && performance.now() - anim.t0 < anim.dur;
+      draw();
+      if (running) {
+        rafId = requestAnimationFrame(loop);
+      } else if (anim) {
+        endAnim();
+      }
+    };
+    rafId = requestAnimationFrame(loop);
+  }
+  function refresh() { draw(); ensureLoop(); }
+
+  let checkSndTimer = 0;     // 장군 소리 예약 (수마다 새로 잡아 겹치지 않게)
+  // 이동 애니메이션과 함께 한 수를 둔다. 끝나면 done() 을 부른다(애니메이션이 없으면 즉시)
+  function playMoveWithAnim(move, done) {
+    const pc = game.board[move.fr][move.fc];
+    const cap = game.board[move.tr][move.tc];
+    if (game.play(move) && game.result) recordFinish(game.result.winner);
+    saveGame();          // 이어하기: 둔 즉시 저장한다 (판이 끝났으면 지운다)
+    playSound(cap ? 'capture' : 'move');
+    if (game.check) {
+      clearTimeout(checkSndTimer);
+      checkSndTimer = setTimeout(function () { playSound('check'); }, 280);
+    }
+    if (game.check && !game.result) flashCheck();   // 장군이면 판이 잠깐 붉게 번쩍인다
+    renderCaptured();
+    if (!pc || !MOVE_MS) { updateStatus(); refresh(); if (done) done(); showResultIfOver(); return; }
+    anim = { move, pc: { side: pc.side, type: pc.type }, cap, t0: performance.now(), dur: MOVE_MS, done };
+    updateStatus();
+    refresh();
+  }
+  function endAnim() {
+    const d = anim.done;
+    anim = null;
+    refresh();
+    if (d) d();
+    showResultIfOver();
+  }
+
+  // ---- 보드 크기 계산 ----
+  function layout() {
+    const paW = playAreaEl.clientWidth - 16;   // #playArea 좌우 8px 여백 제외
+    const maxH = Math.max(320, window.innerHeight - 210);
+    // 보드 SVG 는 viewBox 900x1000 이고 좌우·상하 50 여백 + 한 칸 100 단위다.
+    // 여백을 한 칸의 0.5배로 잡으면 이미지 격자와 정확히 겹친다.
+    // 그래서 판 전체는 가로 9칸, 세로 10칸 크기가 된다.
+    // (여백을 40px 로 어림잡던 예전 계산은 캔버스를 판 밖으로 18px 삐져나오게 했다)
+    // 전적·단추는 PC 에서 항상 판 오른쪽에 둔다. 판이 쓸 수 있는 폭은 창 폭에서
+    // 전적·단추 자리(168+168)와 사이 여백(36), #boardWrap 좌우 여백(16)을 뺀 만큼이고
+    // (좁은 화면은 전적이 판 아래로 가므로 창 폭을 그대로 쓴다), 그 폭과 창 높이에
+    // 맞는 크기가 100% 다. 가로 스크롤이 생기지 않게 이 크기를 넘지 않는다
+    // CSS 의 @media (max-width: 700px) 와 같은 기준을 쓴다 (창 폭만 보면 스크롤바 폭 때문에 어긋난다)
+    const narrow = window.matchMedia('(max-width: 700px)').matches;
+    const availW = narrow ? paW - 16 : paW - 168 - 168 - 36 - 16;
+    const fit = Math.min((availW - 1) / 9, (maxH - 1) / 10);
+    cell = Math.max(28, Math.floor(fit * Math.min(zoomPct, 100) / 100));
+    pad = Math.round(cell * 0.5);
+    const w = pad * 2 + cell * 8;
+    const h = pad * 2 + cell * 9;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // 게임 좌표(0,0 = 초 기준 아래쪽) → 화면 좌표
+  // 한을 고르면 판을 '세로로' 뒤집는다. 그러면 내 말은 언제나 아래, 상대는 위에 놓인다.
+  // (가로로 뒤집으면 말이 좌우 대칭으로 배치돼 어색하다 — 세로 뒤집기가 맞다)
+  function toScreen(r, c) {
+    return flipped ? { x: pad + c * cell, y: pad + r * cell }
+                   : { x: pad + c * cell, y: pad + (9 - r) * cell };
+  }
+  function toGame(px, py) {
+    const c = Math.round((px - pad) / cell);
+    const t = Math.round((py - pad) / cell);
+    const r = flipped ? t : 9 - t;
+    if (!J.inside(r, c)) return null;
+    if (Math.abs(px - toScreen(r, c).x) > cell * 0.5) return null;
+    if (Math.abs(py - toScreen(r, c).y) > cell * 0.5) return null;
+    return { r, c };
+  }
+  // 클릭·마우스 좌표(화면) → 판 좌표. CSS 픽셀과 캔버스 픽셀 차이를 맞춰 준다.
+  function eventSquare(ev) {
+    const rect = canvas.getBoundingClientRect();
+    const px = (ev.clientX - rect.left) * (canvas.width / (rect.width || 1)) / (window.devicePixelRatio || 1);
+    const py = (ev.clientY - rect.top) * (canvas.height / (rect.height || 1)) / (window.devicePixelRatio || 1);
+    return toGame(px, py);
+  }
+
+  // ---- 기물 설명 풍선 ----------------------------------------------------
+  // 도움말 창 '말의 움직임'과 같은 내용을, '초보자 도움'이 켜져 있을 때
+  // 판 위의 말에 마우스를 올리면 작은 풍선으로 보여 준다.
+  const PIECE_NAME = { R: '차(車)', N: '마(馬)', E: '상(象)', C: '포(包)', G: '사(士)', K: '장(將)' };
+  // 기물 값어치(대략 점수): 풍선 설명과 '잡힐 수 있는 말' 표시가 함께 쓴다
+  const PIECE_VALUE = { R: 13, C: 7, N: 5, E: 3, G: 2, P: 2, K: 0 };
+  const PIECE_TIP = {
+    R: '앞·뒤·옆으로 멀리까지 갑니다. 궁성의 ✕ 선도 탈 수 있습니다.',
+    C: '다른 말 하나를 넘어야만 갈 수 있고, 포끼리는 잡지 못합니다. 넘지 않고는 한 칸도 못 갑니다.',
+    N: '한 칸 곧게 간 뒤 대각선으로 꺾습니다. 가는 길(다리)에 말이 있으면 못 갑니다.',
+    E: '한 칸 곧게 간 뒤 대각선으로 두 칸 꺾습니다. 중간 두 칸이 비어 있어야 합니다.',
+    G: '궁성(✕ 표시) 안에서만 움직입니다. 장(將)을 지키는 말입니다.',
+    K: '궁성 안에서 한 칸씩 움직입니다. 이 말을 잡히면 지는 것입니다.',
+    P: '앞과 옆으로 한 칸 갑니다. 뒤로는 못 가며, 상대 궁성의 ✕ 선 위에서는 대각선으로도 갑니다.',
+  };
+  function pieceTipName(pc) {
+    if (pc.type === 'P') return pc.side === J.HAN ? '병(兵)' : '졸(卒)';
+    return PIECE_NAME[pc.type] || '';
+  }
+  function showPieceTip(pc, x, y) {
+    const worth = PIECE_VALUE[pc.type];
+    pieceTipEl.innerHTML = '<b>' + pieceTipName(pc) + '</b>' +
+      (worth ? ' <span class="pv">약 ' + worth + '점</span>' : '') +
+      ' ' + (PIECE_TIP[pc.type] || '');
+    pieceTipEl.hidden = false;
+    const r = pieceTipEl.getBoundingClientRect();
+    let tx = x + 14, ty = y + 18;
+    if (tx + r.width > window.innerWidth - 6) tx = x - r.width - 14;    // 오른쪽 끝이면 왼쪽에
+    if (ty + r.height > window.innerHeight - 6) ty = y - r.height - 18; // 아래 끝이면 위에
+    pieceTipEl.style.left = Math.max(6, tx) + 'px';
+    pieceTipEl.style.top = Math.max(6, ty) + 'px';
+  }
+  function hidePieceTip() { pieceTipEl.hidden = true; }
+  canvas.addEventListener('pointermove', function (ev) {
+    if (!beginnerHelp) return;                   // 초보자 도움을 켰을 때만 뜬다
+    if (ev.pointerType !== 'mouse') return;      // 손가락 터치에는 뜨지 않는다
+    const g = eventSquare(ev);
+    const pc = g ? game.board[g.r][g.c] : null;
+    if (!pc) { hidePieceTip(); return; }
+    showPieceTip(pc, ev.clientX, ev.clientY);
+  });
+  canvas.addEventListener('pointerleave', hidePieceTip);
+  canvas.addEventListener('pointerdown', hidePieceTip);
+
+  // ---- 그리기 ----
+  // 보드: 지정한 SVG 가 있으면 그려 쓰고, 없으면 캔버스로 직접 그린다
+  function drawBoard(bw, bh) {
+    const url = BOARD_FILE[boardDesign];
+    const im = url ? assetImg(url) : null;
+    if (im) {
+      ctx.drawImage(im, 0, 0, bw, bh);
+      return;
+    }
+    if (url) {                                   // 아직 안 열렸으면 바탕만 칠해 둔다
+      ctx.fillStyle = '#f0dcb0';
+      ctx.fillRect(0, 0, bw, bh);
+      return;
+    }
+    ctx.fillStyle = '#f0dcb0';
+    ctx.fillRect(0, 0, bw, bh);
+    ctx.strokeStyle = '#6b4a2b';
+    ctx.lineWidth = 1.4;
+    for (let r = 0; r < 10; r++) {
+      const a = toScreen(r, 0), z = toScreen(r, 8);
+      line(a.x, a.y, z.x, z.y);
+    }
+    for (let c = 0; c < 9; c++) {
+      const a = toScreen(0, c), z = toScreen(9, c);
+      line(a.x, a.y, z.x, z.y);
+    }
+    ctx.lineWidth = 1.1;
+    palaceDiag(0, 3, 2, 5); palaceDiag(0, 5, 2, 3);
+    palaceDiag(7, 3, 9, 5); palaceDiag(7, 5, 9, 3);
+    ctx.fillStyle = '#6b4a2b';                    // 포·졸 시작점
+    for (const [r, c] of [[2, 1], [2, 7], [3, 0], [3, 2], [3, 4], [3, 6], [3, 8],
+                          [7, 1], [7, 7], [6, 0], [6, 2], [6, 4], [6, 6], [6, 8]]) {
+      const p = toScreen(r, c);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function draw() {
+    const bw = pad * 2 + cell * 8, bh = pad * 2 + cell * 9;
+    hidePieceTip();      // 판을 다시 그리면 말 위치가 바뀔 수 있으니 설명 풍선은 닫는다
+    ctx.clearRect(0, 0, bw, bh);
+
+    drawBoard(bw, bh);
+
+    // 기보를 되짚어보는 중이면 그 옛 국면을, 아니면 지금 국면을 그린다
+    const board = viewState ? viewState.board : game.board;
+    const lastMove = viewState ? viewState.lastMove : game.lastMove;
+
+    // 마지막 수 표시: 보드 대비에 맞춘 색의 원 2개 (지나온 자리 / 도착 자리)
+    if (lastMove) {
+      const a = toScreen(lastMove.fr, lastMove.fc);
+      const z = toScreen(lastMove.tr, lastMove.tc);
+      const ringR = cell * 0.46;
+      for (const [p, strong] of [[a, false], [z, true]]) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, ringR, 0, Math.PI * 2);
+        ctx.fillStyle = markInk(strong ? 0.34 : 0.16);
+        ctx.fill();
+        ctx.strokeStyle = markInk(strong ? 0.70 : 0.42);
+        ctx.lineWidth = strong ? 3 : 2;
+        ctx.stroke();
+      }
+    }
+
+    // 힌트(추천 수): 출발 자리와 도착 자리에 파란 점선 원
+    if (hintMove && !viewState) {
+      ctx.save();
+      ctx.setLineDash([6, 5]);
+      ctx.strokeStyle = 'rgba(21, 101, 192, .9)';
+      ctx.lineWidth = 3;
+      for (const [p, ink] of [[toScreen(hintMove.fr, hintMove.fc), 0.10],
+                              [toScreen(hintMove.tr, hintMove.tc), 0.26]]) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, cell * 0.44, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(21, 101, 192, ' + ink + ')';
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 선택 표시
+    if (selected && !viewState) {
+      const p = toScreen(selected.r, selected.c);
+      ctx.fillStyle = 'rgba(76, 175, 80, .30)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, cell * 0.46, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 기물
+    const moving = anim && !viewState ? anim.move : null;
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 9; c++) {
+        const pc = board[r][c];
+        if (!pc) continue;
+        // 움직이는 말은 도착 칸에서 그리지 않고(별도로 보간해 그린다)
+        if (moving && r === moving.tr && c === moving.tc) continue;
+        drawPiece(r, c, pc);
+      }
+    }
+
+    // 포획되는 말은 잡히며 사라진다
+    if (anim && !viewState && anim.cap) {
+      const p = toScreen(anim.move.tr, anim.move.tc);
+      const k = animProgress();
+      if (k < 1) drawPiece(anim.move.tr, anim.move.tc, anim.cap, { alpha: 1 - k, scale: 1 - 0.25 * k });
+    }
+
+    // 움직이는 말
+    if (anim && !viewState) {
+      const k = animProgress();
+      const a = toScreen(anim.move.fr, anim.move.fc);
+      const z = toScreen(anim.move.tr, anim.move.tc);
+      const x = a.x + (z.x - a.x) * k;
+      const y = a.y + (z.y - a.y) * k;
+      drawPiece(anim.move.tr, anim.move.tc, anim.pc, { x, y, lift: k });
+    }
+
+    // 장군: 걸린 장 위에 붉은 링과 '장' 딱지를 그린다 (누가 걸렸는지 한눈에 보이게)
+    if (!viewState && game.check && !game.result) drawCheckKing();
+
+    // 장군: 방어에 쓸 수 있는 내 말에 주황 링을 그린다
+    // (이건 상태가 바뀔 때만 다시 계산해 두므로 매 프레임 비용이 없다)
+    if (!viewState && defenseHints.length) drawDefenseHints();
+
+    // 초보자 도움: 다음 수에 잡힐 수 있는 내 말에 주황 점을 찍는다
+    if (!viewState && dangerMarks.length) drawDangerMarks();
+
+    // 이동 가능 위치 표시
+    for (const m of selectedMoves) {
+      const p = toScreen(m.tr, m.tc);
+      const isCap = !!board[m.tr][m.tc];
+      ctx.beginPath();
+      if (isCap) {
+        ctx.strokeStyle = 'rgba(198, 40, 40, .85)';
+        ctx.lineWidth = 3;
+        ctx.arc(p.x, p.y, cell * 0.44, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(46, 125, 50, .65)';
+        ctx.arc(p.x, p.y, cell * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  function line(x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+  function palaceDiag(r1, c1, r2, c2) {
+    const a = toScreen(r1, c1), z = toScreen(r2, c2);
+    line(a.x, a.y, z.x, z.y);
+  }
+
+  // opts: { x, y, alpha, scale, lift } — 위치/투명도/크기/들뜸(그림자 거리) 지정
+  function drawPiece(r, c, pc, opts) {
+    const o = opts || {};
+    const q = toScreen(r, c);
+    const p = { x: o.x !== undefined ? o.x : q.x, y: o.y !== undefined ? o.y : q.y };
+    const rad = cell * 0.46 * (o.scale || 1);
+    ctx.save();
+    ctx.globalAlpha = o.alpha === undefined ? 1 : o.alpha;
+    drawPieceImage(p, pc, rad, pieceUrl(pc), o.lift || 0);
+    ctx.restore();
+  }
+
+  // 말 이미지. 아직 로딩이 안 끝났으면 글자로 대신 보여 준다.
+  function drawPieceImage(p, pc, rad, url, lift) {
+    const im = url ? assetImg(url) : null;
+    const size = rad * 2.05;
+    const cy = p.y - cell * 0.02 - lift * cell * 0.28;
+    // 이동 중에는 그림자를 드리워 '떠 있는' 느낌을 준다
+    if (lift > 0) {
+      ctx.fillStyle = 'rgba(60, 40, 20, .20)';
+      octagon(p.x, p.y + cell * 0.055 + lift * cell * 0.30, rad * (1 - lift * 0.25));
+      ctx.fill();
+    }
+    // 한글 표기 모드에서는 그림을 쓰지 않고 한글 글자 원판을 그린다.
+    // (카카오·목재 그림에는 한자가 그림으로 새겨져 있어 글자만 바꿀 수 없다)
+    if (lang === 'hangul' || !im) {
+      if (lang === 'hangul') {
+        ctx.beginPath();
+        ctx.arc(p.x, cy, rad * 0.96, 0, Math.PI * 2);
+        ctx.fillStyle = '#fdf7e8';
+        ctx.fill();
+        ctx.lineWidth = Math.max(2, rad * 0.16);
+        ctx.strokeStyle = sideColor(pc.side);
+        ctx.stroke();
+      }
+      ctx.fillStyle = sideColor(pc.side);
+      ctx.font = 'bold ' + Math.round(cell * 0.5) + 'px "Nanum Myeongjo", "바탕", "Batang", serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const table = lang === 'hangul' ? J.HANGUL : J.HANJA;
+      ctx.fillText(table[pc.side][pc.type], p.x, cy + cell * 0.01);
+      return;
+    }
+    ctx.drawImage(im, p.x - size / 2, cy - size / 2, size, size);
+  }
+
+  function animProgress() {
+    if (!anim) return 1;
+    const t = Math.min(1, Math.max(0, (performance.now() - anim.t0) / anim.dur));
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  // '초보자 도움' 스위치: 켜면 ① 장군 중 막을 수 있는 내 말에 주황 링,
+  // ② 말에 마우스를 올리면 움직임 설명 풍선이 뜬다. 기본 OFF (도움을 원하는 사람만 켠다)
+  let beginnerHelp = false;
+
+  // 장군 중 방어에 쓸 수 있는 내 말 위에 주황 링을 그린다.
+  function drawDefenseHints() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 167, 0, .95)';
+    ctx.lineWidth = 3;
+    for (const k of defenseHints) {
+      const p = toScreen(k[0], k[1]);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, cell * 0.50, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 초보자 도움: 다음 수에 잡힐 수 있는 내 말 위에 주황 점을 찍는다 (오른쪽 위 모서리)
+  function drawDangerMarks() {
+    ctx.save();
+    for (const k of dangerMarks) {
+      const p = toScreen(k[0], k[1]);
+      const bx = p.x + cell * 0.32, by = p.y - cell * 0.33, br = Math.max(5, cell * 0.11);
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(216, 67, 21, .95)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255, 253, 247, .95)';
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 장군에 걸린 장 위에 붉은 링 + '장' 딱지를 그린다.
+  function drawCheckKing() {
+    const k = J.findGeneral(game.board, game.turn);
+    if (!k) return;
+    const p = toScreen(k.r, k.c);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(211, 47, 47, .85)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, cell * 0.51, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(211, 47, 47, .28)';
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, cell * 0.58, 0, Math.PI * 2);
+    ctx.stroke();
+    const bx = p.x + cell * 0.34, by = p.y - cell * 0.36, br = Math.max(9, cell * 0.19);
+    ctx.beginPath();
+    ctx.arc(bx, by, br, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(211, 47, 47, .96)';
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + Math.round(br * 1.15) + 'px "Malgun Gothic", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('장', bx, by + 1);
+    ctx.restore();
+  }
+
+  // 방금 둔 수로 장군이 걸렸을 때: 판을 잠깐 붉게 번쩍이게 한다 (CSS 애니메이션)
+  function flashCheck() {
+    canvas.classList.remove('flash');
+    void canvas.offsetWidth;        // 강제로 다시 읽어 애니메이션을 처음부터 재생한다
+    canvas.classList.add('flash');
+  }
+
+  // 팔각형 말판 조각 모양
+  function octagon(x, y, rad) {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = Math.PI / 8 + i * Math.PI / 4;
+      const px = x + Math.cos(a) * rad;
+      const py = y + Math.sin(a) * rad;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  // ---- 상태 표시 ----
+  function statusName(side) {
+    // 초·한 이름에 아래/위를 붙이지 않는다. 판은 언제나 내 말이 아래다.
+    const who = side === J.CHO ? '초(楚·파랑)' : '한(漢·빨강)';
+    return '<span style="color:' + sideColor(side) + '">' + who + '</span>';
+  }
+  // 끝난 이유를 관점에 맞게 적는다 ('졌습니다. 상대 장군을 잡았습니다'처럼 반대로 읽히지 않게)
+  function resultHowText() {
+    const r = game.result;
+    if (r.reason === 'draw') return '같은 국면이 3번 반복되었습니다';
+    const won = vsHuman || r.winner === humanSide;   // 사람끼리는 이긴 쪽 관점으로 읽으면 된다
+    if (r.reason === 'mate') {
+      return won ? '상대가 두 수를 둘 수 없습니다 (멍군)'
+                 : '내가 둘 수 있는 수가 없습니다 (멍군)';
+    }
+    return won ? '상대 장군을 잡았습니다' : '내 장군을 잡혔습니다';
+  }
+  function updateStatus() {
+    if (viewState) return;     // 기보를 되짚어 보는 중에는 안내 줄을 그대로 둔다
+    undoBtn.disabled = game.history.length === 0 || thinking || guardBusy || !!anim;
+    hintBtnEl.disabled = thinking || hintBusy || guardBusy || !!game.result ||
+      (!vsHuman && game.turn !== humanSide) || !!anim;
+    syncSettingsLock();
+    updateReviewBtn();          // 복기 단추 활성 여부도 함께 갱신한다
+    kibitzMaybe();              // 외통수 경고·실수 확인용 미리보기 (뒤에서 조용히)
+    if (game.result) {
+      const draw = game.result.winner === null;
+      const win = game.result.winner === humanSide;
+      const how = resultHowText();
+      // 사람끼리 대국에서는 이긴 쪽을 이름으로 알려 준다 (이긴 쪽이 없으면 무승부)
+      statusEl.className = 'result' + (draw ? ' draw' : vsHuman || win ? '' : ' lose');
+      statusEl.innerHTML = (draw ? '무승부입니다. '
+        : vsHuman ? statusName(game.result.winner) + '가 이겼습니다! '
+        : win ? '이겼습니다! ' : '졌습니다. ') +
+        '<span style="font-size:15px;letter-spacing:0">' + how + '</span>';
+      return;
+    }
+    statusEl.className = game.check ? 'check' : '';
+    if (thinking) {
+      statusEl.className = '';
+      statusEl.innerHTML = statusName(J.other(humanSide)) + '이 생각 중… (' +
+        (engine ? 'Fairy-Stockfish' : '내장 AI') + ')';
+      return;
+    }
+    if (game.check) {
+      // 걸린 쪽의 장을 직접 짚어 주어야 한눈에 보인다
+      const k = J.findGeneral(game.board, game.turn);
+      statusEl.innerHTML = '장군! ' + statusName(game.turn) + '의 장이 걸렸습니다' +
+        (k ? ' <span style="font-size:14px;letter-spacing:0">(' +
+             (k.c + 1) + '열 ' + (10 - k.r) + '번째 줄)</span>' : '') +
+        mateWarnHtml();
+      return;
+    }
+    if (vsHuman) {
+      statusEl.innerHTML = statusName(game.turn) + ' 차례입니다 ' +
+        '<span style="font-size:13px;letter-spacing:0;color:#8d7a5c">(사람끼리 대국)</span>';
+      return;
+    }
+    statusEl.innerHTML = statusName(game.turn) + ' 차례 — ' +
+      (game.turn === humanSide ? '당신 차례입니다' : '기다려 주세요') +
+      (engineState === 'off'
+        ? '<div class="hint">Fairy-Stockfish 엔진을 쓸 수 없어 내장 AI로 두겠습니다.</div>'
+        : '') +
+      mateWarnHtml();
+  }
+
+  // ---- 조작 ----
+  function onPointer(ev) {
+    if (ev.button !== 0) return;       // 오른쪽·가운데 단추로는 두지 않는다 (왼쪽·터치만)
+    ev.preventDefault();
+    if (anim || thinking || guardBusy || game.result) return;
+    if (viewState) return;                             // 기보를 되짚어 보는 중에는 판을 조작하지 않는다
+    if (!vsHuman && game.turn !== humanSide) return;   // AI 차례에는 내가 둘 수 없다
+    const g = eventSquare(ev);
+    if (!g) { clearSelection(); refresh(); return; }   // 판 밖을 누르면 고르기가 풀린다
+
+    const move = selectedMoves.find((m) => m.tr === g.r && m.tc === g.c);
+    if (move) { tryHumanMove(move); return; }
+
+    // 같은 말을 다시 누르면 고르기가 풀린다 (도움말 설명대로)
+    if (selected && selected.r === g.r && selected.c === g.c) {
+      clearSelection();
+      refresh();
+      return;
+    }
+
+    const pc = game.board[g.r][g.c];
+    if (pc && (vsHuman || pc.side === humanSide)) {
+      const legal = game.moves().filter((m) => m.fr === g.r && m.fc === g.c);
+      if (!legal.length) {
+        // 움직일 수 없는 말: 이유를 알려 준다. (특히 장군 중 대다수 말이 여기에 걸린다)
+        clearSelection();
+        flashTip(game.check
+          ? '이 말로는 장군을 피할 수 없습니다. 주황색 링이 있는 말이나 걸린 장을 움직이세요.'
+          : '지금은 이 말을 움직일 수 없습니다.');
+        refresh();
+        return;
+      }
+      selected = g;
+      selectedMoves = legal;
+      hideTip();
+    } else {
+      clearSelection();
+    }
+    refresh();
+  }
+  function clearSelection() { selected = null; selectedMoves = []; }
+
+  // 잠깐(1.8초) 안내 문구를 띄운다
+  let tipTimer = 0;
+  function flashTip(text, ms) {
+    tipEl.textContent = text;
+    tipEl.className = 'tip on';
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(hideTip, ms || 1800);
+  }
+  function hideTip() {
+    clearTimeout(tipTimer);
+    tipEl.className = 'tip';
+    tipEl.textContent = '';      // 잔상을 지운다 (다음 안내가 이전 문구로 보이지 않게)
+  }
+
+  function doHumanMove(move) {
+    clearSelection();
+    hintMove = null;
+    humanMoves++;
+    playMoveWithAnim(move, function () {
+      if (!game.result && !vsHuman) scheduleAI();
+    });
+  }
+
+  function scheduleAI() {
+    thinking = true;
+    updateStatus();
+    const token = ++aiToken;
+    // 다음 화면 갱신 후에 계산 (생각 중 표시가 뜨도록)
+    setTimeout(async function () {
+      let mv = null;
+      try {
+        mv = await engineMove();
+        if (token !== aiToken) return;   // 새 게임·무르기 등으로 무효화된 경우
+        if (!mv) mv = JanggiAI.chooseMove(game.board, game.turn, level);
+      } finally {
+        // 계산이 어떻게 끝나든 '생각 중'에 갇히지 않게 한다
+        if (token === aiToken) thinking = false;
+      }
+      if (mv) {
+        playMoveWithAnim(mv);
+      } else {
+        updateStatus();
+      }
+    }, 60);
+  }
+
+  // 엔진 후보 중 우리 규칙에 맞는 첫 수를 고른다.
+  // 엔진 규칙은 '빅장 진입 허용 · 패스 허용'이라 우리가 거절하는 수가 섞일 수 있다.
+  async function engineMove(lv) {
+    if (!engine) return null;
+    try {
+      const fen = JanggiFS.boardToFen(game.board, game.turn);
+      const cands = await engine.bestMove(fen, lv || level);
+      if (!cands || !cands.length) return null;
+      const legal = game.moves();
+      for (const uci of cands) {
+        const mv = JanggiFS.uciToMove(uci);
+        if (!mv) continue;
+        if (mv.fr === mv.tr && mv.fc === mv.tc) continue;   // 패스는 지원하지 않음
+        if (legal.some((m) => m.fr === mv.fr && m.fc === mv.fc && m.tr === mv.tr && m.tc === mv.tc)) {
+          return mv;
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 엔진 준비(실패하면 내장 AI 로 자동 폴백)
+  JanggiFS.createEngine().then(function (h) {
+    engine = h;
+    engineState = 'ready';
+    // 대국 도중 엔진이 멈추면 내장 AI 로 넘어가고 안내 줄에 알린다
+    h.onFail = function () {
+      engine = null;
+      engineState = 'off';
+      updateStatus();
+    };
+  }).catch(function (e) {
+    engine = null;
+    engineState = 'off';
+  });
+
+  // ---- 대국 전적 (난이도별) ---------------------------------------------
+  // 몇 판을 두었고 그중 몇 판을 이겼는지 난이도별로 나눠 브라우저에 쌓아 둔다(localStorage).
+  // 결과는 이김(W)·짐(L)·무승부(D) 셋이고,
+  // 끝내지 않고 중단한 판(새 게임·설정 변경·새로고침)은 짐으로 센다.
+  const REC_KEY = 'janggi.record';
+  const recCountEl = document.getElementById('recCount');
+  const recWinEl = document.getElementById('recWin');
+  const recLoseEl = document.getElementById('recLose');
+  const recDrawEl = document.getElementById('recDraw');
+  const recRecentWrapEl = document.getElementById('recRecentWrap');
+  const recRecentEl = document.getElementById('recRecent');
+  const recEmptyEl = document.getElementById('recEmpty');
+  const recResetEl = document.getElementById('recReset');
+  const recLvListEl = document.getElementById('recLvList');
+  const recChEl = document.getElementById('recCh');
+  let recAll = loadRecord();    // { '1': {w,l,hist}, '2': ... } 난이도별 기록
+  let recCounted = false;       // 이번 판을 이미 전적에 넣었나 (무르기로 되돌린다)
+
+  function emptyStat() { return { w: 0, l: 0, d: 0, hist: [], best: 0 }; }
+  // hist 안에서 가장 길었던 연승 (hist 는 20판까지만 남으므로 옛 기록은 best 로 따로 센다)
+  function bestRun(hist) {
+    let best = 0, cur = 0;
+    for (let i = 0; i < hist.length; i++) {
+      if (hist[i] === 'W') { cur++; if (cur > best) best = cur; } else cur = 0;
+    }
+    return best;
+  }
+  // 지금 이어지고 있는 연승
+  function curRun(hist) {
+    let n = 0;
+    for (let i = hist.length - 1; i >= 0 && hist[i] === 'W'; i--) n++;
+    return n;
+  }
+  function normStat(v) {
+    const hist = v && Array.isArray(v.hist) ? v.hist.slice(-20) : [];
+    return {
+      w: (v && v.w) | 0,
+      l: (v && v.l) | 0,
+      d: (v && v.d) | 0,
+      hist: hist,
+      best: Math.max((v && v.best) | 0, bestRun(hist))
+    };
+  }
+  function loadRecord() {
+    try {
+      const v = JSON.parse(localStorage.getItem(REC_KEY) || 'null');
+      if (v && v.byLevel) {                    // 난이도별 기록
+        const out = {};
+        for (const k in v.byLevel) out[k] = normStat(v.byLevel[k]);
+        return out;
+      }
+      // 난이도를 구분하기 전에 쌓인 기록 → 화면에서 고른 난이도의 기록으로 옮겨 둔다
+      // (이 함수는 newGame() 보다 먼저 불려서 level 변수는 아직 초깃값 2다)
+      if (v && typeof v.w === 'number' && typeof v.l === 'number') {
+        const out = {};
+        out[levelSel.value] = normStat(v);
+        return out;
+      }
+    } catch (e) { /* 저장된 기록이 깨졌으면 처음부터 다시 센다 */ }
+    return {};
+  }
+  function saveRecord() {
+    try { localStorage.setItem(REC_KEY, JSON.stringify({ byLevel: recAll })); } catch (e) { /* 저장이 막혀도 대국은 계속된다 */ }
+  }
+  function statOf(lv) { return recAll[String(lv)] || emptyStat(); }  // 읽기용 — 없으면 빈 기록
+  function myStat() {                                                // 쓰기용 — 없으면 만들어 둔다
+    const k = String(level);
+    if (!recAll[k]) recAll[k] = emptyStat();
+    return recAll[k];
+  }
+  function levelName(v) {
+    const op = levelSel.querySelector('option[value="' + v + '"]');
+    return op ? op.textContent.replace(/\s*\(.*\)\s*$/, '') : v;
+  }
+  function renderRecord() {
+    const st = statOf(level);
+    const n = st.w + st.l + st.d;
+    let total = 0;
+    for (const k in recAll) total += recAll[k].w + recAll[k].l + recAll[k].d;
+    recCountEl.textContent = levelName(level) + (n ? ' · ' + n + '판' : '');
+    recWinEl.textContent = st.w;
+    recLoseEl.textContent = st.l;
+    recDrawEl.textContent = st.d;
+    recResetEl.disabled = !total;
+    recEmptyEl.style.display = n ? 'none' : '';
+    recRecentWrapEl.style.display = n ? '' : 'none';
+    let html = '';
+    for (let i = st.hist.length - 1; i >= 0; i--) {
+      const r = st.hist[i];
+      const cls = r === 'W' ? 'w' : r === 'L' ? 'l' : 'd';
+      html += '<span class="recTag ' + cls + '">' + (r === 'W' ? '승' : r === 'L' ? '패' : '무') + '</span>';
+    }
+    recRecentEl.innerHTML = html;
+    renderLevels();
+    recChEl.textContent = chBest > 0
+      ? '연승 도전 최고 도달: ' + chBest + '단계' + (chBest === 4 ? ' — 전 난이도 정복!' : '')
+      : '';
+  }
+  // 난이도별 승·패 요약표 (지금 고른 난이도는 굵게) — 최고 연승·승률도 함께
+  function renderLevels() {
+    let html = '';
+    const opts = levelSel.options;
+    for (let i = 0; i < opts.length; i++) {
+      const v = opts[i].value;
+      const st = statOf(v);
+      const n = st.w + st.l + st.d;
+      const cur = v === String(level);
+      html += '<div class="recLv' + (cur ? ' cur' : '') + '"><span>' + levelName(v) +
+              '</span><span class="recLvVal">' + st.w + '승 ' + st.l + '패' +
+              (st.d ? ' ' + st.d + '무' : '') + '</span></div>';
+      if (n) {
+        const now = curRun(st.hist);
+        const best = Math.max(st.best || 0, bestRun(st.hist));
+        html += '<div class="recLvStreak' + (cur ? ' cur' : '') + '">' +
+                (best ? '최고 ' + best + '연승 · ' : '') + '승률 ' +
+                Math.round((st.w / n) * 100) + '%' +
+                (now >= 2 ? ' · 지금 ' + now + '연승' : '') + '</div>';
+      }
+    }
+    recLvListEl.innerHTML = html;
+  }
+  // ---- 잡힌 말 (전적 패널에 그림으로 보여 준다) --------------------------
+  // 처음 기물 수에서 지금 남은 수를 빼면 '잡힌 말'이 나온다.
+  // 이렇게 세면 무르기로 되돌려도 따로 손댈 것 없이 저절로 맞아떨어진다.
+  const capMineEl = document.getElementById('capMine');
+  const capLostEl = document.getElementById('capLost');
+  const capMineLblEl = document.getElementById('capMineLbl');
+  const capLostLblEl = document.getElementById('capLostLbl');
+  const START_COUNT = { K: 1, R: 2, N: 2, E: 2, G: 2, C: 2, P: 5 };
+  const CAP_ORDER = ['R', 'N', 'E', 'G', 'C', 'P', 'K'];
+
+  function capturedTypes(side) {
+    const now = {};
+    for (let r = 0; r < J.ROWS; r++) {
+      for (let c = 0; c < J.COLS; c++) {
+        const pc = game.board[r][c];
+        if (pc && pc.side === side) now[pc.type] = (now[pc.type] || 0) + 1;
+      }
+    }
+    const out = [];
+    for (const t of CAP_ORDER) {
+      const gone = START_COUNT[t] - (now[t] || 0);
+      for (let i = 0; i < gone; i++) out.push(t);
+    }
+    return out;
+  }
+  function capHtml(types, side) {
+    if (!types.length) return '<span class="capNone">없음</span>';
+    let html = '';
+    if (lang === 'hangul') {                 // 한글 표기 모드: 글자 원판으로 보여 준다
+      for (const t of types) {
+        html += '<span class="capChar" style="color:' + sideColor(side) + '">' +
+                J.HANGUL[side][t] + '</span>';
+      }
+      return html;
+    }
+    for (const t of types) html += '<img src="' + pieceUrl({ side: side, type: t }) + '" alt="">';
+    return html;
+  }
+  function renderCaptured() {
+    // 사람끼리 대국에서는 아래쪽(초) 기준으로 보여 주고, 이름표도 바꾼다
+    const mine = vsHuman ? J.CHO : humanSide;
+    capMineLblEl.textContent = vsHuman ? '초(파랑)가 잡은 말' : '내가 잡은 말';
+    capLostLblEl.textContent = vsHuman ? '한(빨강)이 잡은 말' : '내가 잃은 말';
+    const foe = mine === J.CHO ? J.HAN : J.CHO;
+    capMineEl.innerHTML = capHtml(capturedTypes(foe), foe);      // 상대 말
+    capLostEl.innerHTML = capHtml(capturedTypes(mine), mine);    // 내 말
+  }
+
+  // 결과 한 판을 '지금 난이도' 칸에 남긴다 (kind: W = 이김, L = 짐·중단, D = 무승부)
+  function recordResult(kind) {
+    const st = myStat();
+    if (kind === 'W') {
+      st.w++;
+      const run = curRun(st.hist) + 1;   // 방금 이긴 것까지 이어서 센다
+      if (run > st.best) st.best = run;
+    }
+    else if (kind === 'D') st.d++;
+    else st.l++;
+    st.hist.push(kind);
+    if (st.hist.length > 20) st.hist = st.hist.slice(-20);
+    saveRecord();
+    renderRecord();
+  }
+  // 한 판이 끝났을 때 (winner = 이긴 진영, null 이면 무승부)
+  function recordFinish(winner) {
+    if (recCounted || vsHuman) return;   // 사람끼리 대국은 전적에 남기지 않는다
+    recCounted = true;
+    recordResult(winner === null ? 'D' : winner === humanSide ? 'W' : 'L');
+    // 연승 도전: 이긴 단계까지를 최고 도달 기록으로 남긴다
+    if (challenge && winner === humanSide && chStage > chBest) {
+      chBest = chStage;
+      save('janggi.chBest', String(chBest));
+      renderRecord();
+    }
+  }
+  // 끝나지 않은 판을 중단했을 때 (중단도 패로 센다)
+  function recordAbandon() {
+    if (vsHuman) return;                 // 사람끼리 대국은 전적에 남기지 않는다
+    recordResult('L');
+  }
+  // 끝난 판을 무르기로 되돌렸을 때
+  function recordUndoFinish() {
+    if (!recCounted) return;
+    recCounted = false;
+    const st = myStat();
+    const last = st.hist.pop();
+    if (last === 'W') st.w = Math.max(0, st.w - 1);
+    else if (last === 'D') st.d = Math.max(0, st.d - 1);
+    else if (last === 'L') st.l = Math.max(0, st.l - 1);
+    saveRecord();
+    renderRecord();
+  }
+  recResetEl.addEventListener('click', function () {
+    if (!confirm('모든 난이도의 전적 기록을 지울까요?')) return;
+    recAll = {};
+    saveRecord();
+    renderRecord();
+  });
+
+  // ---- 전적 파일 내보내기·가져오기 ---------------------------------------
+  // 전적과 설정을 JSON 파일 하나로 저장하고 되살린다 (컴퓨터·브라우저를 바꿔도 기록이 남는다).
+  const REC_SETTING_KEYS = ['janggi.piece', 'janggi.board', 'janggi.zoom', 'janggi.hints',
+                            'janggi.sound', 'janggi.resume', 'janggi.guard', 'janggi.challenge'];
+  function recFileData() {
+    const settings = {};
+    for (const k of REC_SETTING_KEYS) settings[k] = load(k, '');
+    return { app: 'janggi', v: 1, record: { byLevel: recAll }, chBest: chBest, settings: settings };
+  }
+  function importRecordData(d, skipAsk) {
+    if (!d || d.app !== 'janggi' || !d.record || !d.record.byLevel) {
+      flashTip('장기 전적 파일이 아닙니다');
+      return false;
+    }
+    if (!skipAsk && !confirm('지금 전적을 가져온 파일로 덮어씁니다. 계속할까요?')) return false;
+    const out = {};
+    for (const k in d.record.byLevel) out[k] = normStat(d.record.byLevel[k]);
+    recAll = out;
+    saveRecord();
+    if (typeof d.chBest === 'number') {
+      chBest = Math.min(4, Math.max(0, d.chBest | 0));
+      save('janggi.chBest', String(chBest));
+    }
+    if (d.settings) {
+      for (const k of REC_SETTING_KEYS) {      // 아는 설정 이름만 가져온다
+        const v = d.settings[k];
+        if (typeof v === 'string' && v !== '') save(k, v);
+      }
+    }
+    renderRecord();
+    flashTip('전적을 가져왔습니다 (말·판 크기 같은 설정은 새로고침하면 적용)');
+    return true;
+  }
+  // 파일 하나를 내려받게 한다 (전적 내보내기·기보 저장이 함께 쓴다)
+  function downloadText(fileName, text, mime) {
+    const blob = new Blob([text], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  // 파일 이름에 붙일 날짜 글자 (2026-10-19 → 20261019, 시각까지 → 20261019-1530)
+  function dateStamp(withTime) {
+    const d = new Date();
+    const two = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate()) +
+      (withTime ? '-' + two(d.getHours()) + two(d.getMinutes()) : '');
+  }
+  document.getElementById('recExport').addEventListener('click', function () {
+    downloadText('장기전적-' + dateStamp() + '.json',
+      JSON.stringify(recFileData(), null, 2), 'application/json');
+    flashBtn(this, '저장됨!', '내보내기');
+  });
+  const recImportFileEl = document.getElementById('recImportFile');
+  document.getElementById('recImport').addEventListener('click', function () { recImportFileEl.click(); });
+  recImportFileEl.addEventListener('change', function () {
+    const f = this.files && this.files[0];
+    this.value = '';           // 같은 파일을 다시 골라도 change 가 뜨게 비워 둔다
+    if (!f) return;
+    const fr = new FileReader();
+    fr.onload = function () {
+      try { importRecordData(JSON.parse(String(fr.result))); }
+      catch (e) { flashTip('장기 전적 파일이 아닙니다'); }
+    };
+    fr.readAsText(f);
+  });
+  // 창을 닫거나 새로고침했을 때의 처리.
+  // 이어하기가 꺼져 있으면 지금까지처럼 중단을 패로 남기고,
+  // 켜져 있으면 저장해 둔 판을 그대로 두고 패로 세지 않는다(다음에 이어서 둘 수 있다).
+  let leaveCounted = false;
+  function gameInProgress() { return !!game && humanMoves > 0 && !game.result; }
+  function countLeave() {
+    if (leaveCounted || !gameInProgress() || resumeOn) return;
+    leaveCounted = true;
+    recordAbandon();
+    clearSave();               // 패로 셌으니 저장본은 지운다
+  }
+  // 실제로 페이지를 떠날 때만 센다 (아래 닫기 경고에서 '취소'를 누르면 여기까지 오지 않는다)
+  window.addEventListener('pagehide', function (e) { if (!e.persisted) countLeave(); });
+  // 닫기·뒤로 가기 경고: 이어하기가 꺼져 있어 '닫으면 패'가 될 때만 물어본다
+  // (문구는 브라우저가 정한다 — 브라우저마다 기본 문구가 조금씩 다르게 뜬다)
+  window.addEventListener('beforeunload', function (ev) {
+    if (!leaveCounted && !resumeOn && gameInProgress()) {
+      ev.returnValue = '대국이 진행 중입니다. 창을 닫으면 패로 기록됩니다.';
+      ev.preventDefault();
+      return ev.returnValue;
+    }
+  });
+  renderRecord();
+
+  // 판이 바뀐 뒤(새 게임·이어하기·이 자리부터 다시 두기) 화면을 한꺼번에 다시 맞춘다
+  function applyPosition() {
+    flipped = humanSide === J.HAN;
+    layout();
+    refresh();
+    renderCaptured();
+    renderRecord();     // 난이도가 바뀌었으면 그 난이도의 전적을 보여 준다
+    updateStatus();
+    if (!vsHuman && !game.result && game.turn !== humanSide) scheduleAI();
+  }
+  function newGame(stage) {
+    hideResult();
+    exitReplay();              // 기보를 되짚어 보던 중이었다면 끝낸다
+    resetReview();             // 새 판이면 지난 복기 표시는 지운다
+    clearSave();               // 새 판을 시작하므로 저장본을 지운다 (진행 중이던 판은 아래에서 패로 남긴다)
+    hintMove = null;
+    // 진행 중이던 판은 중단으로 보고 패로 남긴다 (한 수라도 둔 판만, 사람끼리 대국은 제외)
+    if (game && humanMoves > 0 && !game.result) recordAbandon();
+    aiToken++;
+    thinking = false;
+    anim = null;
+    humanMoves = 0;
+    recCounted = false;
+    clearSelection();
+    vsHuman = oppSel.value === 'human';
+    humanSide = vsHuman ? J.CHO : (sideSel.value === 'H' ? J.HAN : J.CHO);
+    // 내 진영은 선택한 차림, AI는 기본(마상상마).
+    // 사람끼리 대국에서는 고른 차림을 양쪽에 똑같이 적용한다.
+    game = vsHuman
+      ? new J.Game({ layoutCho: layoutSel.value, layoutHan: layoutSel.value })
+      : new J.Game(humanSide === J.CHO
+        ? { layoutCho: layoutSel.value }
+        : { layoutHan: layoutSel.value });
+    level = parseInt(levelSel.value, 10);
+    // 연승 도전: 단계에 맞는 난이도로 시작한다 ('다음 단계' 단추가 stage 를 넘겨 준다)
+    if (challenge && !vsHuman) {
+      chStage = (typeof stage === 'number') ? Math.min(4, Math.max(1, stage)) : 1;
+      levelSel.value = String(chStage);
+      level = chStage;
+    }
+    applyPosition();
+  }
+
+  function undo() {
+    if (anim || thinking || guardBusy || game.history.length === 0) return;
+    hideResult();
+    resetReview();             // 판이 바뀌었으니 지난 복기 표시는 지운다
+    hintMove = null;
+    aiToken++;
+    anim = null;
+    if (game.result) recordUndoFinish();
+    game.undo();          // 마지막 수 되돌리기
+    // AI 대국이면 AI 수 + 내 수를 한 쌍으로 되돌린다 (사람끼리 대국은 한 수씩)
+    if (!vsHuman && game.turn !== humanSide) game.undo();
+    renderCaptured();
+    humanMoves = Math.max(0, humanMoves - 1);
+    clearSelection();
+    refresh();
+    updateStatus();
+    saveGame();          // 이어하기: 되돌린 판을 저장한다 (아무것도 안 남았으면 지운다)
+    // 되돌린 뒤 차례가 AI 라면 AI 가 다시 둔다.
+    // (한(漢)을 골라 AI 가 먼저 둔 수를 무르면 이 상태가 된다 — 두지 않고 멈추지 않게)
+    if (!vsHuman && !game.result && game.turn !== humanSide) scheduleAI();
+  }
+
+  // ---- 이벤트 ----
+  canvas.addEventListener('pointerdown', onPointer);
+  document.getElementById('newBtn').addEventListener('click', newGame);
+  undoBtn.addEventListener('click', undo);
+  document.getElementById('langBtn').addEventListener('click', function () {
+    lang = lang === 'hanja' ? 'hangul' : 'hanja';
+    this.textContent = lang === 'hanja' ? '한글 표기' : '한자 표기';
+    renderCaptured();          // 잡은 말도 한자 그림 ↔ 한글 글자로 바꾼다
+    refresh();
+  });
+  sideSel.addEventListener('change', newGame);
+  levelSel.addEventListener('change', newGame);
+  layoutSel.addEventListener('change', newGame);
+  oppSel.addEventListener('change', newGame);
+  let resizeRaf = 0;                 // 연속 resize 를 한 프레임에 한 번으로 모은다
+  window.addEventListener('resize', function () {
+    if (resizeRaf) return;
+    resizeRaf = requestAnimationFrame(function () { resizeRaf = 0; layout(); refresh(); });
+  });
+
+  // ---- 디자인 선택 ------------------------------------------------------
+  const pieceSel = document.getElementById('pieceSel');
+  const boardSel = document.getElementById('boardSel');
+  const load = (k, d) => { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* 저장 안 될 수 있음 */ } };
+
+  pieceDesign = load('janggi.piece', 'kakao');
+  boardDesign = load('janggi.board', 'brown');
+  // 옛 설정값(기본 말)이 남아 있으면 카카오로 바꿔 준다
+  if (pieceSel.querySelector('option[value="' + pieceDesign + '"]') === null) pieceDesign = 'kakao';
+  if (boardSel.querySelector('option[value="' + boardDesign + '"]') === null) boardDesign = 'brown';
+  pieceSel.value = pieceDesign;
+  boardSel.value = boardDesign;
+
+  pieceSel.addEventListener('change', function () {
+    pieceDesign = this.value;
+    save('janggi.piece', pieceDesign);
+    refresh();
+  });
+  boardSel.addEventListener('change', function () {
+    boardDesign = this.value;
+    save('janggi.board', boardDesign);
+    refresh();
+  });
+
+  // ---- 판 크기 조절 (60% ~ 100%) -----------------------------------------
+  // 100% 는 창에 판이 최대한 맞는 크기다. 판 전체가 창에 보이도록 그 위로는 키우지
+  // 않고, 창이 작거나 판을 작게 보고 싶을 때 줄이는 데 쓴다. 값은 기억해 둔다.
+  const zoomValEl = document.getElementById('zoomVal');
+  function setZoom(v) {
+    const want = Math.round(v / 10) * 10;
+    if (want > 100 && zoomPct >= 100) {   // 이미 창에 꽉 참 — 키울 자리가 없다
+      flashTip('판이 창에 꽉 찼습니다 (창을 크게 하면 판도 커집니다)');
+      return;
+    }
+    if (want < 60 && zoomPct <= 60) {     // 이미 가장 작음
+      flashTip('판이 가장 작습니다');
+      return;
+    }
+    zoomPct = Math.min(100, Math.max(60, want));
+    save('janggi.zoom', String(zoomPct));
+    zoomValEl.textContent = zoomPct + '%';
+    layout();
+    refresh();
+  }
+  zoomPct = Math.min(100, Math.max(60, parseInt(load('janggi.zoom', '100'), 10) || 100));
+  zoomValEl.textContent = zoomPct + '%';
+  document.getElementById('zoomOut').addEventListener('click', function () { setZoom(zoomPct - 10); });
+  document.getElementById('zoomIn').addEventListener('click', function () { setZoom(zoomPct + 10); });
+  zoomValEl.addEventListener('click', function () { setZoom(100); });   // 가운데 숫자 = 100% 되돌리기
+
+  // 초보자 도움(기본 OFF): 장군 중 '지금 움직일 수 있는 내 말'에 주황 링 +
+  // 말에 마우스를 올리면 움직임 설명 풍선. 하나의 스위치로 함께 켜고 끈다.
+  const hintSel = document.getElementById('hintSel');
+  beginnerHelp = load('janggi.hints', 'off') === 'on';
+  hintSel.checked = beginnerHelp;
+  hintSel.addEventListener('change', function () {
+    beginnerHelp = this.checked;
+    save('janggi.hints', beginnerHelp ? 'on' : 'off');
+    if (!beginnerHelp) hidePieceTip();
+    updateStatus();            // 표시들 다시 계산 + 외통수 경고 켜고 끄기 + 미리보기 시작
+    refresh();
+  });
+
+  // 실수 확인(기본 OFF): 크게 손해 보는 수를 두기 전에 한 번 물어본다
+  const guardSel = document.getElementById('guardSel');
+  guardOn = load('janggi.guard', 'off') === 'on';
+  guardSel.checked = guardOn;
+  guardSel.addEventListener('change', function () {
+    guardOn = this.checked;
+    save('janggi.guard', guardOn ? 'on' : 'off');
+    kibitzMaybe();             // 켠 순간 '지금 국면 점수'를 미리 받아 둔다
+  });
+
+  // 연승 도전(기본 OFF): 초보(1단계)부터 시작해 이기면 다음 난이도로 올라간다
+  const challengeSel = document.getElementById('challengeSel');
+  challenge = load('janggi.challenge', '0') === '1';
+  chBest = Math.min(4, Math.max(0, parseInt(load('janggi.chBest', '0'), 10) || 0));
+  challengeSel.checked = challenge;
+  renderRecord();              // 저장된 '연승 도전 최고 도달'을 전적에 보여 준다
+  challengeSel.addEventListener('change', function () {
+    challenge = this.checked;
+    save('janggi.challenge', challenge ? '1' : '0');
+    newGame();                 // 도전을 켜면 1단계부터, 끄면 고른 난이도로 새로 시작한다
+  });
+
+  // 처음부터 선택값(진영·차림·난이도)으로 판을 세운다.
+  // 이게 없으면 humanSide 는 J.CHO 그대로, 차림은 기본(마상상마)로 남아
+  // '내 색' 선택이 판에 반영되지 않는다.
+  // (newGame 안에서 layout/refresh/updateStatus 까지 함께 한다)
+  // ---- 소리 (소리 파일 없이 코드로 만들어 낸다: file:// 에서도 그대로 동작) ----
+  let audioCtx = null;
+  let soundOn = true;
+  function ensureAudio() {
+    if (!soundOn) return null;
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { audioCtx = new AC(); } catch (e) { return null; }
+    }
+    if (audioCtx.state === 'suspended') {
+      const p = audioCtx.resume();
+      if (p && p.catch) p.catch(function () { /* 깨우기에 실패해도 대국은 계속된다 */ });
+    }
+    return audioCtx;
+  }
+  // 짧은 소리 하나 (주파수, 시작 시각, 길이, 음색, 크기)
+  // 소리가 너무 작아 못 듣는 일이 없도록 전체 음량을 조금 키운다
+  const SOUND_BOOST = 1.8;
+  function tone(freq, at, dur, type, vol) {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    const v = Math.min(0.6, vol * SOUND_BOOST);
+    o.type = type;
+    o.frequency.setValueAtTime(freq, at);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(v, at + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+    o.connect(g);
+    g.connect(audioCtx.destination);
+    o.start(at);
+    o.stop(at + dur + 0.02);
+  }
+  function playSound(name) {
+    if (!ensureAudio()) return;
+    const t = audioCtx.currentTime + 0.01;
+    if (name === 'move') {
+      tone(330, t, 0.09, 'triangle', 0.13);
+      tone(165, t, 0.06, 'sine', 0.09);
+    } else if (name === 'capture') {
+      tone(196, t, 0.18, 'square', 0.11);
+      tone(88, t, 0.22, 'sine', 0.15);
+    } else if (name === 'check') {
+      tone(880, t, 0.12, 'triangle', 0.15);
+      tone(1174, t + 0.13, 0.16, 'triangle', 0.15);
+    } else if (name === 'win') {
+      [523, 659, 784, 1046].forEach(function (f, i) { tone(f, t + i * 0.11, 0.24, 'triangle', 0.15); });
+    } else if (name === 'lose') {
+      [440, 349, 262].forEach(function (f, i) { tone(f, t + i * 0.15, 0.32, 'sine', 0.15); });
+    } else if (name === 'draw') {
+      tone(392, t, 0.2, 'sine', 0.14);
+      tone(392, t + 0.22, 0.3, 'sine', 0.14);
+    } else if (name === 'hint') {
+      tone(1046, t, 0.1, 'sine', 0.11);
+      tone(1318, t + 0.1, 0.13, 'sine', 0.11);
+    }
+  }
+  const soundSelEl = document.getElementById('soundSel');
+  soundOn = load('janggi.sound', '1') !== '0';
+  soundSelEl.checked = soundOn;
+  soundSelEl.addEventListener('change', function () {
+    soundOn = this.checked;
+    save('janggi.sound', soundOn ? '1' : '0');
+    if (soundOn) playSound('move');    // 켤 때 확인음
+  });
+  // 첫 제스처(클릭·키) 때 소리 장치를 미리 깨워 둔다.
+  // 브라우저는 제스처 없이 만든 소리 장치를 재워 두는데, 미리 깨워 두면
+  // 이후 AI 수 소리처럼 제스처 밖에서 나는 소리도 확실히 들린다.
+  document.addEventListener('pointerdown', function () { ensureAudio(); }, true);
+  document.addEventListener('keydown', function () { ensureAudio(); }, true);
+
+  // ---- 이어하기 (자동 저장) ----------------------------------------------
+  // 대국 중이면 판을 브라우저에 저장해 두고, 다음에 열 때 이어서 둘지 묻는다.
+  // '이어하기'가 꺼져 있으면 저장하지 않는다 — 그때는 창을 닫으면 패로 기록된다('닫기 경고'가 미리 알린다).
+  const SAVE_KEY = 'janggi.save';
+  const resumeSelEl = document.getElementById('resumeSel');
+  const resumeBoxEl = document.getElementById('resumeBox');
+  const rsSubEl = document.getElementById('rsSub');
+  const rsNoteEl = document.getElementById('rsNote');
+  let pendingSave = null;         // 시작할 때 발견한 저장된 판
+  let pendingRaw = '';            // 그 저장본 원문 (고르기 전까지는 지우지 않으려고)
+  resumeOn = load('janggi.resume', '1') !== '0';
+  resumeSelEl.checked = resumeOn;
+  resumeSelEl.addEventListener('change', function () {
+    resumeOn = this.checked;
+    save('janggi.resume', resumeOn ? '1' : '0');
+    if (resumeOn) saveGame();     // 켠 순간의 판부터 저장한다
+    else clearSave();             // 끄면 저장본을 지운다 (닫으면 패로 기록)
+  });
+
+  function clearSave() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 저장이 막혀도 대국은 계속된다 */ }
+  }
+  // 진행 중인 판만 저장한다 (내가 한 수라도 둔 뒤부터, 끝난 판은 지운다)
+  function saveGame() {
+    if (!game || humanMoves === 0 || game.result) { clearSave(); return; }
+    if (!resumeOn) return;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({
+        v: 1, side: humanSide, vs: vsHuman ? 'human' : 'ai',
+        level: level, layout: layoutSel.value,
+        ch: challenge && !vsHuman ? chStage : 0,
+        humanMoves: humanMoves, game: game.toData(),
+      }));
+    } catch (e) { /* 저장이 막혀도 대국은 계속된다 */ }
+  }
+  // 저장된 판을 읽는다. 없거나 깨졌으면 null (그냥 새 판을 시작하면 된다)
+  function loadSave() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY) || '';
+      const d = JSON.parse(raw || 'null');
+      if (!d || d.v !== 1) return null;
+      const g = J.gameFromData(d.game);
+      if (!g) return null;
+      pendingRaw = raw;
+      return {
+        side: d.side === 'H' ? 'H' : 'C',
+        vs: d.vs === 'human' ? 'human' : 'ai',
+        level: Math.min(4, Math.max(1, parseInt(d.level, 10) || 1)),
+        layout: String(d.layout || ''),
+        ch: Math.min(4, Math.max(0, parseInt(d.ch, 10) || 0)),
+        humanMoves: d.humanMoves | 0,
+        game: g,
+      };
+    } catch (e) { return null; }
+  }
+  function hideResume() { resumeBoxEl.hidden = true; }
+  function showResume(p) {
+    const n = p.game.history.length;
+    rsSubEl.textContent = (p.vs === 'human'
+        ? '사람끼리 대국'
+        : (p.ch ? '연승 도전 ' + p.ch + '단계' : levelName(p.level)) + ' · ' + (p.side === 'C' ? '파랑(초)' : '빨강(한)')) +
+      ' · ' + n + '수 · ' + (p.vs === 'human'
+        ? (p.game.turn === 'C' ? '초 차례' : '한 차례')
+        : (p.game.turn === p.side ? '당신 차례' : '상대 차례'));
+    rsNoteEl.textContent = p.vs === 'human'
+      ? '새로 시작하면 지난 판은 사라집니다'
+      : '새로 시작하면 지난 판은 패로 기록됩니다';
+    resumeBoxEl.hidden = false;
+  }
+  // 저장된 판을 이어서 둔다
+  function resumeGame(p) {
+    hideResume();
+    exitReplay();             // 저장된 판으로 새로 시작하니 기보 되돌리기 상태는 끝낸다
+    resetReview();             // 저장된 판으로 새로 시작하니 지난 복기 표시는 지운다
+    aiToken++;                    // 뒤에서 돌던 AI 계산 무효화
+    thinking = false;
+    anim = null;
+    clearSelection();
+    hintMove = null;
+    vsHuman = p.vs === 'human';
+    humanSide = vsHuman ? J.CHO : (p.side === 'H' ? J.HAN : J.CHO);
+    level = p.level;
+    challenge = !vsHuman && p.ch > 0;      // 저장된 판의 연승 도전 상태를 그대로 되살린다
+    challengeSel.checked = challenge;
+    if (challenge) chStage = p.ch;
+    humanMoves = p.humanMoves;
+    recCounted = false;           // 아직 전적에 넣지 않은 판이다
+    game = p.game;
+    oppSel.value = vsHuman ? 'human' : 'ai';   // 설정 값도 저장된 판에 맞춘다
+    sideSel.value = p.side;       // (대국 중이라 아래 설정들은 잠겨 있다)
+    levelSel.value = String(p.level);
+    if (layoutSel.querySelector('option[value="' + p.layout + '"]')) layoutSel.value = p.layout;
+    applyPosition();
+  }
+  // 저장된 판을 그만둔다 (중단이므로 패로 기록)
+  function discardSavedGame(p) {
+    hideResume();
+    clearSave();
+    if (p.vs !== 'human') {       // 사람끼리 대국은 패로 남기지 않는다
+      const back = level;         // 기록은 저장된 판의 난이도에 남긴다
+      level = p.level;
+      recordAbandon();
+      level = back;
+    }
+    newGame();
+  }
+  document.getElementById('rsContinue').addEventListener('click', function () {
+    if (!pendingSave) { hideResume(); return; }
+    const p = pendingSave;
+    pendingSave = null;
+    resumeGame(p);
+  });
+  document.getElementById('rsDiscard').addEventListener('click', function () {
+    if (!pendingSave) { hideResume(); return; }
+    const p = pendingSave;
+    pendingSave = null;
+    discardSavedGame(p);
+  });
+
+  // ---- 대국 결과 창 ------------------------------------------------------
+  const resultBoxEl = document.getElementById('resultBox');
+  const resTitleEl = document.getElementById('resTitle');
+  const resSubEl = document.getElementById('resSub');
+  const resUndoEl = document.getElementById('resUndo');
+  const resNewEl = document.getElementById('resNew');
+  const rsNextEl = document.getElementById('rsNext');
+
+  function showResult() {
+    const draw = game.result.winner === null;
+    const win = game.result.winner === humanSide;
+    // 사람끼리 대국에서는 이긴 진영 이름을 보여 준다 (지는 쪽은 없다)
+    resTitleEl.className = draw ? 'draw' : vsHuman || win ? '' : 'lose';
+    resTitleEl.textContent = draw ? '무승부'
+      : vsHuman ? (game.result.winner === J.CHO ? '초(파랑) 승리!' : '한(빨강) 승리!')
+      : win ? '승리했습니다!' : '졌습니다';
+    let sub = resultHowText();
+    // 연승 도전: 이기면 다음 단계, 지거나 비기면 도전 끝
+    const chWin = challenge && !vsHuman && !draw && win;
+    if (chWin) {
+      sub += chStage < 4 ? ' · 연승 도전 ' + chStage + '단계 통과!' : ' · 연승 도전 전 난이도 정복!';
+    } else if (challenge && !vsHuman) {
+      sub += ' · 연승 도전은 여기까지 (새 게임을 누르면 1단계부터)';
+    }
+    resSubEl.textContent = sub;
+    // '다음 단계' 단추는 이겨서 다음 단계가 남았을 때만 보여 준다
+    const hasNext = chWin && chStage < 4;
+    rsNextEl.hidden = !hasNext;
+    rsNextEl.textContent = hasNext ? (chStage + 1) + '단계 도전' : '';
+    rsNextEl.className = hasNext ? 'btn-main' : '';
+    resNewEl.className = hasNext ? '' : 'btn-main';
+    resUndoEl.disabled = game.history.length === 0;
+    resultBoxEl.hidden = false;
+    playSound(draw ? 'draw' : vsHuman || win ? 'win' : 'lose');
+  }
+  function hideResult() { resultBoxEl.hidden = true; }
+  // 방금 둔 수로 판이 끝났으면 결과 창을 띄운다 (닫은 뒤에는 다시 띄우지 않는다)
+  function showResultIfOver() {
+    if (game.result && resultBoxEl.hidden) showResult();
+  }
+  document.getElementById('resNew').addEventListener('click', function () { hideResult(); newGame(); });
+  document.getElementById('rsNext').addEventListener('click', function () {
+    if (!challenge) return;
+    hideResult();
+    newGame(chStage + 1);      // 이긴 단계의 다음 난이도로 새 판을 시작한다
+  });
+  document.getElementById('resUndo').addEventListener('click', function () { hideResult(); undo(); });
+  document.getElementById('resClose').addEventListener('click', hideResult);
+  resultBoxEl.addEventListener('click', function (ev) { if (ev.target === resultBoxEl) hideResult(); });
+
+  // ---- 힌트: 엔진에게 내 최선의 수를 묻는다 ------------------------------
+  const HINT_LEVEL = 3;   // 힌트는 '고수' 실력으로 (최강은 너무 오래 걸린다)
+  function posText(r, c) { return (c + 1) + '열 ' + (10 - r) + '줄'; }
+  async function askHint() {
+    if (anim || thinking || hintBusy || guardBusy || game.result) return;
+    if (!vsHuman && game.turn !== humanSide) return;
+    hintBusy = true;
+    hintMove = null;
+    const fen = JanggiFS.boardToFen(game.board, game.turn);   // 어느 국면에 대한 힌트인지 기억해 둔다
+    updateStatus();
+    flashTip('힌트를 찾는 중…', 8000);
+    let mv = null;
+    try { mv = await engineMove(HINT_LEVEL); } catch (e) { /* 엔진이 실패하면 내장 AI 로 */ }
+    hintBusy = false;
+    // 찾는 사이 판이 바뀌었으면(무르기·두기 등) 엉뚱한 힌트가 되므로 보여 주지 않는다
+    if (game.result || JanggiFS.boardToFen(game.board, game.turn) !== fen) {
+      updateStatus(); refresh(); return;
+    }
+    if (!mv) mv = JanggiAI.chooseMove(game.board, game.turn, 3);
+    if (!mv) { flashTip('힌트를 찾지 못했습니다.'); updateStatus(); refresh(); return; }
+    hintMove = mv;
+    if (!mv) { flashTip('힌트를 찾지 못했습니다.'); updateStatus(); refresh(); return; }
+    hintMove = mv;
+    playSound('hint');
+    const table = lang === 'hangul' ? J.HANGUL : J.HANJA;
+    const pc = game.board[mv.fr][mv.fc];
+    flashTip('힌트: ' + (pc ? (table[pc.side][pc.type] || '') + ' ' : '') +
+             posText(mv.fr, mv.fc) + ' → ' + posText(mv.tr, mv.tc), 6000);
+    updateStatus();
+    refresh();
+  }
+  hintBtnEl.addEventListener('click', askHint);
+
+  // ---- 기보(수순) 창 -----------------------------------------------------
+  const movesBoxEl = document.getElementById('movesBox');
+  const mvListEl = document.getElementById('mvList');
+  const mvCountEl = document.getElementById('mvCount');
+  const mvCopyEl = document.getElementById('mvCopy');
+  const mvSaveEl = document.getElementById('mvSave');
+  const mvRewEl = document.getElementById('mvReview');
+  const mvNoteEl = document.getElementById('mvNote');
+  const mvStepEl = document.getElementById('mvStep');
+  const mvStepTxtEl = document.getElementById('mvStepTxt');
+  const mvPrevEl = document.getElementById('mvPrev');
+  const mvNextEl = document.getElementById('mvNext');
+  const mvRestartEl = document.getElementById('mvRestart');
+  // 기보에 필요한 [두기 전 판, 수] 목록. game.history[k] 는 'k번째 수를 두기 전' 상태다.
+  // 그래서 k번째 수는 history[k].lastMove 이고, 그 수를 두기 전 판은 history[k-1].board 다.
+  function moveItems() {
+    const items = [];
+    for (let k = 1; k < game.history.length; k++) {
+      const m = game.history[k].lastMove;
+      if (m) items.push([game.history[k - 1].board, m]);
+    }
+    if (game.lastMove && game.history.length) {
+      items.push([game.history[game.history.length - 1].board, game.lastMove]);
+    }
+    return items;
+  }
+
+  // ---- 기보 되짚어보기(리플레이) ------------------------------------------
+  // 수를 누르면 그 장면을 판에 보여 주고 ◀ ▶ 로 넘긴다. game 상태는 건드리지 않는다.
+  // idx번째 수를 둔 직후의 판 (0 = 시작 국면)
+  function replayBoard(idx, items) {
+    if (idx <= 0) return items.length ? items[0][0] : game.board;
+    if (idx >= items.length) return game.board;
+    return items[idx][0];       // (idx+1)번째 수를 두기 전 판 = idx번째 수를 둔 뒤 판
+  }
+  function moverOf(items, k) {  // k(0부터)번째 수를 둔 쪽
+    const m = items[k][1];
+    const pc = items[k][0][m.fr][m.fc];
+    return pc ? pc.side : J.CHO;
+  }
+  function setReplay(idx) {
+    const items = moveItems();
+    if (!items.length) return;
+    replayIdx = Math.max(0, Math.min(items.length, idx));
+    viewState = {
+      board: replayBoard(replayIdx, items),
+      lastMove: replayIdx > 0 ? items[replayIdx - 1][1] : null,
+      turn: replayIdx === 0 ? moverOf(items, 0) : J.other(moverOf(items, replayIdx - 1)),
+    };
+    hidePieceTip();
+    clearSelection();
+    hintMove = null;
+    mvStepEl.hidden = false;
+    mvStepTxtEl.textContent = replayIdx + '/' + items.length + '수';
+    mvPrevEl.disabled = replayIdx <= 0;
+    mvNextEl.disabled = replayIdx >= items.length;
+    mvRestartEl.hidden = !game.result;
+    renderMoves();
+    statusEl.className = '';
+    statusEl.innerHTML = '기보를 되짚어 보는 중입니다 ' +
+      '<span style="font-size:14px;letter-spacing:0">(' + replayIdx + '/' + items.length + '수)</span>';
+    refresh();
+  }
+  function exitReplay() {
+    if (!viewState) return;
+    viewState = null;
+    replayIdx = -1;
+    mvStepEl.hidden = true;
+    mvRestartEl.hidden = true;
+    renderMoves();
+    updateStatus();
+    refresh();
+  }
+  // 보는 국면부터 새 판으로 이어 둔다 (지난 판은 이미 결과가 전적에 남아 있다)
+  function restartFrom() {
+    if (!viewState || !game.result) return;
+    const turn = viewState.turn;
+    const nb = J.cloneBoard(viewState.board);
+    const lm = viewState.lastMove;
+    // 이어 둘 수 있는 국면인지 먼저 확인한다 (장이 이미 잡힌 국면은 안 된다)
+    const g = J.gameFromData({
+      board: nb, turn: turn, lastMove: lm || null, history: [],
+      check: J.isCheck(nb, turn),
+    });
+    if (!g) { flashTip('이 국면은 이어 둘 수 없습니다 (장이 이미 잡힌 국면)'); return; }
+    movesBoxEl.hidden = true;
+    hideResult();
+    exitReplay();
+    resetReview();
+    aiToken++;
+    thinking = false;
+    anim = null;
+    hintMove = null;
+    clearSelection();
+    humanMoves = 0;
+    recCounted = false;
+    if (challenge) {           // 이어 두기는 연습이므로 연승 도전은 끈다
+      challenge = false;
+      challengeSel.checked = false;
+      save('janggi.challenge', '0');
+      flashTip('연승 도전을 끄고 이 국면부터 다시 둡니다');
+    }
+    game = g;
+    applyPosition();
+  }
+
+  // 한 수를 화면·글자 양쪽에서 쓸 수 있게 조각내 둔다
+  function moveParts(board, m) {
+    const table = lang === 'hangul' ? J.HANGUL : J.HANJA;
+    const pc = board[m.fr][m.fc];
+    const han = !!pc && pc.side === J.HAN;
+    return {
+      who: han ? '한' : '초',
+      whoCls: han ? 'han' : 'cho',
+      text: (pc ? (table[pc.side][pc.type] || '') : '') + ' ' +
+        posText(m.fr, m.fc) + ' → ' + posText(m.tr, m.tc) +
+        (board[m.tr][m.tc] ? ' (잡음)' : ''),
+    };
+  }
+  function renderMoves() {
+    const items = moveItems();
+    mvCountEl.textContent = items.length ? items.length + '수' : '';
+    mvCopyEl.disabled = mvSaveEl.disabled = !items.length;
+    updateReviewBtn();
+    if (!items.length) {
+      mvListEl.innerHTML = '<div id="mvEmpty">아직 둔 수가 없습니다</div>';
+      return;
+    }
+    if (review) {
+      let miss = 0, big = 0;
+      for (let i = 0; i < review.rows.length; i++) {
+        if (review.rows[i].flag === 'big') big++;
+        else if (review.rows[i].flag === 'miss') miss++;
+      }
+      mvNoteEl.textContent = (miss || big)
+        ? '복기: 아쉬움 ' + miss + '개 · 큰 실수 ' + big + '개 (숫자는 둔 쪽의 유불리)'
+        : '복기: 눈에 띄게 아쉬운 수가 없었습니다 (숫자는 둔 쪽의 유불리)';
+    } else {
+      mvNoteEl.textContent = MV_NOTE;
+    }
+    let html = '';
+    for (let i = 0; i < items.length; i++) {
+      const q = moveParts(items[i][0], items[i][1]);
+      let mark = '';
+      let better = '';
+      const row = review ? review.rows[i] : null;
+      if (row) {
+        const ev = fmtEval(row.v);
+        if (ev) {
+          mark += '<span class="mvEval' + (row.v > 50 ? ' plus' : row.v < -50 ? ' minus' : '') + '">' + ev + '</span>';
+        }
+        if (row.flag) {
+          mark += '<span class="mvBadge ' + row.flag + '">' + (row.flag === 'big' ? '큰 실수' : '아쉬움') + '</span>';
+          if (row.better) {
+            better = '<div class="mvBetter">대신: ' + row.better + ' (' + lossText(row.loss) + ')</div>';
+          }
+        }
+      }
+      html += '<div class="mvRow clickable' + (replayIdx === i + 1 ? ' cur' : '') +
+        '" data-mvi="' + (i + 1) + '">' +
+        '<span class="mvNo">' + (i + 1) + '</span>' +
+        '<span class="mvWho ' + q.whoCls + '">' + q.who + '</span>' +
+        '<span class="mvText">' + q.text + '</span>' + mark + '</div>' + better;
+    }
+    mvListEl.innerHTML = html;
+    // 실시간으로 볼 땐 최근 수가 보이게 내리고, 기보를 되짚어 보는 중엔 그 수가 보이게 맞춘다
+    if (replayIdx < 0) {
+      mvListEl.scrollTop = mvListEl.scrollHeight;
+    } else {
+      const cur = mvListEl.querySelector('.mvRow.cur');
+      if (cur) cur.scrollIntoView({ block: 'nearest' });
+    }
+  }
+  // 기보를 글자로 내보낸다 (복사·저장 단추가 함께 쓴다)
+  function movesText() {
+    const items = moveItems();
+    const lines = [];
+    lines.push('장기AI가 힘을 숨기지 않음 — 기보 (beta v0.1)');
+    lines.push('대국: ' + (vsHuman ? '사람끼리 (2인용)'
+      : 'AI · 난이도 ' + levelName(level) + ' · 내 색 ' + (humanSide === J.CHO ? '파랑(초)' : '빨강(한)')));
+    lines.push('날짜: ' + new Date().toLocaleString('ko-KR'));
+    lines.push('');
+    if (!items.length) lines.push('아직 둔 수가 없습니다.');
+    for (let i = 0; i < items.length; i++) {
+      const q = moveParts(items[i][0], items[i][1]);
+      lines.push((i + 1) + '. ' + q.who + ' ' + q.text);
+    }
+    lines.push('');
+    if (game.result) {
+      const who = game.result.winner === null ? '무승부'
+        : game.result.winner === J.CHO ? '초(楚·파랑) 승리' : '한(漢·빨강) 승리';
+      const why = game.result.reason === 'capture' ? '상대 장군을 잡음'
+        : game.result.reason === 'draw' ? '같은 국면 3번 반복' : '상대가 둘 수 없음 (멍군)';
+      lines.push('결과: ' + who + ' (' + why + ')');
+    } else {
+      lines.push('결과: 진행 중 (' + items.length + '수까지 둠)');
+    }
+    return lines.join('\r\n');
+  }
+
+  // ---- 복기(끝난 판 되짚기) -----------------------------------------------
+  // 수마다 국면을 엔진에 물어보고, 실제로 둔 수와 그 국면의 최선 수를 견준다.
+  // 손해 = (두기 전 국면의 평가) − (둔 뒤 국면의 평가), 둔 쪽 관점, 1/100점 단위.
+  const REVIEW_MS = 350;        // 국면 하나를 살펴보는 시간
+  const REVIEW_MISS = 100;      // '아쉬움'으로 볼 손해 (약 1점)
+  const REVIEW_BIG = 400;       // '큰 실수'로 볼 손해 (약 4점, 마·포·차급)
+  const MV_NOTE = '좌표는 초(楚) 기준 · 수를 누르면 그 장면을 봅니다';
+  let review = null;            // { rows: [{ v, loss, flag, better }] } | null, flag: null|'miss'|'big'
+  let reviewToken = 0;          // 새 게임·무르기로 돌던 복기를 무효화할 때 늘린다
+  let reviewBusy = false;
+
+  function resetReview() {
+    reviewToken++;
+    reviewBusy = false;
+    review = null;
+    mvRewEl.textContent = '복기';
+    mvNoteEl.textContent = MV_NOTE;
+    kibToken++;                // 돌던 조용한 평가(외통수 경고·실수 확인)도 무효화한다
+    kibBusy = false;
+    kibKey = '';
+    kibBase = null;
+    mateWarn = null;
+  }
+  function fmtEval(v) {
+    if (v === null || v === undefined) return '';
+    if (v >= 20000) return '승리 임박';
+    if (v <= -20000) return '패배 임박';
+    const t = Math.abs(v) < 5 ? 0 : v / 100;
+    return (t > 0 ? '+' : '') + t.toFixed(1);
+  }
+  // 손해 크기 문구: 메이트가 걸린 국면은 숫자가 너무 커져서 '결정적 손해'로 줄인다
+  function lossText(cp) {
+    return cp >= 20000 ? '결정적 손해' : '약 ' + (Math.round(cp) / 100).toFixed(1) + '점 손해';
+  }
+  function updateReviewBtn() {
+    mvRewEl.disabled = reviewBusy || engineState !== 'ready' || !game.result || !moveItems().length;
+    mvRewEl.textContent = '복기';
+  }
+  // 엔진 응답(메이트 포함)을 비교 가능한 점수로 바꾼다
+  function evalCp(r) {
+    if (!r) return null;
+    if (r.mate !== null && r.mate !== undefined) {
+      return (r.mate > 0 ? 30000 : -30000) - r.mate * 10;
+    }
+    return r.cp === null ? null : r.cp;
+  }
+  async function reviewGame() {
+    if (reviewBusy || !engine || !game.result) return;
+    const items = moveItems();
+    if (!items.length) return;
+    reviewBusy = true;
+    review = null;
+    renderMoves();
+    mvNoteEl.textContent = '엔진이 국면을 살펴보는 중입니다…';
+    const token = ++reviewToken;
+    try {
+      const n = items.length;
+      // 수를 두기 전 판들 + 마지막 수를 둔 뒤의 판 (모두 n+1개)
+      const boards = game.history.map(function (h) { return h.board; });
+      boards.push(game.board);
+      const movers = items.map(function (it) {
+        const pc = it[0][it[1].fr][it[1].fc];
+        return pc ? pc.side : J.CHO;
+      });
+      const evals = [];
+      for (let k = 0; k <= n; k++) {
+        if (token !== reviewToken) return;    // 새 게임·무르기로 취소됨
+        mvNoteEl.textContent = '엔진이 국면을 살펴보는 중입니다… (' + (k + 1) + '/' + (n + 1) + ')';
+        const turn = k < n ? movers[k] : J.other(movers[n - 1]);
+        evals.push(await engine.analyze(JanggiFS.boardToFen(boards[k], turn), REVIEW_MS));
+      }
+      if (token !== reviewToken) return;
+      const rows = [];
+      for (let k = 1; k <= n; k++) {
+        const before = evalCp(evals[k - 1]);
+        const afterRaw = evalCp(evals[k]);
+        const after = afterRaw === null ? null : -afterRaw;   // 둔 쪽 관점으로 뒤집는다
+        let loss = (before !== null && after !== null) ? Math.max(0, before - after) : 0;
+        const bmUci = evals[k - 1].uci;
+        const m = items[k - 1][1];
+        const isBest = !!bmUci && bmUci === JanggiFS.moveToUci(m);
+        if (isBest) loss = 0;                 // 엔진 추천 수와 같으면 평가 흔들림으로 보지 않는다
+        const mine = vsHuman || movers[k - 1] === humanSide;
+        let flag = null;
+        if (mine && loss >= REVIEW_BIG) flag = 'big';
+        else if (mine && loss >= REVIEW_MISS) flag = 'miss';
+        let better = null;
+        if (flag && bmUci) {
+          const bm = JanggiFS.uciToMove(bmUci);
+          if (bm && !(bm.fr === bm.tr && bm.fc === bm.tc)) better = moveParts(boards[k - 1], bm).text;
+        }
+        rows.push({ v: after, loss: loss, flag: flag, better: better });
+      }
+      if (token !== reviewToken) return;
+      review = { rows: rows };
+      renderMoves();
+    } catch (e) {
+      if (token === reviewToken) mvNoteEl.textContent = '복기를 마치지 못했습니다 (엔진 오류)';
+    } finally {
+      if (token === reviewToken) {
+        reviewBusy = false;
+        updateReviewBtn();
+      }
+    }
+  }
+  mvRewEl.addEventListener('click', reviewGame);
+
+  // ---- 조용한 미리보기 (외통수 경고 · 실수 확인 밑작업) ---------------------
+  // 내 차례가 될 때마다 국면을 한 번 슬쩍 평가해 둔다. 그 답을
+  //  · '상대가 몇 수 안에 외통수를 노린다' 경고에 쓰고(초보자 도움을 켰을 때),
+  //  · '지금 국면 점수'로 저장해 두었다가 실수 확인에 쓴다.
+  const MATE_WARN = 6;          // 이 수 이내로 외통수가 보이면 알려 준다
+  const GUARD_MS = 300;         // 미리보기·실수 검사에 주는 시간
+  const GUARD_LOSS = 250;       // 이만큼(2.5점) 이상 손해면 한 번 물어본다
+  let kibKey = '';              // 마지막으로 물어본 국면 (같은 국면은 다시 묻지 않는다)
+  let kibBusy = false;
+  let kibToken = 0;
+  let kibBase = null;           // { fen, cp } — 내 차례 국면의 점수(내 관점)
+  let mateWarn = null;          // { fen, n } — 상대의 외통수 경고
+  let guardBusy = false;        // 실수 검사·질문 중에는 판 조작을 잠근다
+  function kibitzMaybe() {
+    if (!engine || engineState !== 'ready' || game.result || kibBusy) return;
+    if (!guardOn && !(beginnerHelp && !vsHuman)) return;
+    if (!vsHuman && game.turn !== humanSide) return;
+    const fen = JanggiFS.boardToFen(game.board, game.turn);
+    if (fen === kibKey) return;
+    kibKey = fen;
+    kibBusy = true;
+    const token = ++kibToken;
+    engine.analyze(fen, GUARD_MS).then(function (r) {
+      if (token !== kibToken) return;   // 더 새 계산이 시작됐으면 이 답은 버린다
+      kibBusy = false;
+      const cp = evalCp(r);
+      kibBase = cp === null ? null : { fen: fen, cp: cp };
+      mateWarn = null;
+      if (beginnerHelp && !vsHuman && r && r.mate !== null && r.mate !== undefined &&
+          r.mate < 0 && Math.abs(r.mate) <= MATE_WARN) {
+        mateWarn = { fen: fen, n: Math.abs(r.mate) };
+      }
+      updateStatus();
+    }).catch(function () {
+      if (token === kibToken) kibBusy = false;
+    });
+  }
+  function mateWarnHtml() {
+    if (!beginnerHelp || vsHuman || !mateWarn) return '';
+    // 지금 판의 국면에 대한 경고일 때만 보여 준다 (지난 국면 경고가 남아 있지 않게)
+    if (mateWarn.fen !== JanggiFS.boardToFen(game.board, game.turn)) return '';
+    return '<div class="hint danger">위험! 상대가 ' + mateWarn.n + '수 안에 외통수를 노립니다.</div>';
+  }
+
+  // ---- 실수 확인 (두기 전에 한 번 물어보기) --------------------------------
+  const guardBoxEl = document.getElementById('guardBox');
+  const gdSubEl = document.getElementById('gdSub');
+  let guardResolver = null;
+  function askGuard(loss) {
+    const pts = Math.round(loss) / 100;
+    gdSubEl.textContent = (pts >= 30
+        ? '이 수를 두면 크게 손해일 수 있습니다.'
+        : '이 수를 두면 약 ' + pts.toFixed(1) + '점만큼 손해일 수 있습니다.') +
+      ' 그래도 둘까요?';
+    guardBoxEl.hidden = false;
+    return new Promise(function (resolve) { guardResolver = resolve; });
+  }
+  function guardAnswer(ok) {
+    guardBoxEl.hidden = true;
+    const r = guardResolver;
+    guardResolver = null;
+    if (r) r(ok);
+  }
+  document.getElementById('gdCancel').addEventListener('click', function () { guardAnswer(false); });
+  document.getElementById('gdGo').addEventListener('click', function () { guardAnswer(true); });
+  guardBoxEl.addEventListener('click', function (ev) { if (ev.target === guardBoxEl) guardAnswer(false); });
+
+  // 내가 둘 수를 두기 전에 엔진에게 한 번 물어본다 (실수 확인이 켜져 있을 때만).
+  // 미리 받아 둔 '지금 국면 점수'(kibBase)와 '둔 뒤 국면 점수'를 견주어 크게 나빠지면 묻는다.
+  async function tryHumanMove(move) {
+    if (anim || thinking || guardBusy || game.result) return;
+    const tok = aiToken;          // 무르기·새 게임이 일어나면 이 수는 무효가 된다
+    const cap = game.board[move.tr][move.tc];
+    if (guardOn && engine && engineState === 'ready' && !(cap && cap.type === 'K')) {
+      clearSelection();
+      refresh();
+      guardBusy = true;
+      updateStatus();
+      flashTip('이 수를 살펴보는 중…', 900);
+      const fen = JanggiFS.boardToFen(game.board, game.turn);
+      let cpAfter = null;
+      try {
+        const nb = J.applyMove(game.board, move);
+        const r = await engine.analyze(JanggiFS.boardToFen(nb, J.other(game.turn)), GUARD_MS);
+        cpAfter = evalCp(r);
+      } catch (e) { cpAfter = null; }
+      guardBusy = false;
+      if (tok !== aiToken) { updateStatus(); refresh(); return; }
+      const base = (kibBase && kibBase.fen === fen) ? kibBase.cp : null;
+      const loss = (base !== null && cpAfter !== null) ? base + cpAfter : 0;
+      if (loss >= GUARD_LOSS) {
+        const keep = await askGuard(loss);
+        if (tok !== aiToken) { updateStatus(); refresh(); return; }
+        if (!keep) { updateStatus(); refresh(); return; }    // 되돌리기
+      }
+      // 그 사이에 판이 바뀌지 않았는지 마지막으로 확인한다
+      const still = !game.result && game.moves().some(function (m) {
+        return m.fr === move.fr && m.fc === move.fc && m.tr === move.tr && m.tc === move.tc;
+      });
+      if (!still) { updateStatus(); refresh(); return; }
+    }
+    doHumanMove(move);
+  }
+
+  function flashBtn(btn, text, back) {
+    btn.textContent = text;
+    setTimeout(function () { btn.textContent = back; }, 1400);
+  }
+  // 옛 브라우저·권한 문제로 클립보드 API 가 막히면 옛 방식으로 복사한다
+  function legacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+  mvCopyEl.addEventListener('click', async function () {
+    const text = movesText();
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch (e) {
+      ok = legacyCopy(text);
+    }
+    flashBtn(mvCopyEl, ok ? '복사됨!' : '복사 실패', '복사');
+  });
+  mvSaveEl.addEventListener('click', function () {
+    downloadText('장기기보-' + dateStamp(true) + '.txt', movesText(), 'text/plain;charset=utf-8');
+    flashBtn(mvSaveEl, '저장됨!', '저장');
+  });
+  document.getElementById('movesBtn').addEventListener('click', function () {
+    renderMoves();
+    movesBoxEl.hidden = false;
+  });
+  // 수를 누르면 그 장면 보기, ◀ ▶ 로 넘기기, 최신/닫기로 실시간으로 복귀
+  mvListEl.addEventListener('click', function (ev) {
+    const rowEl = ev.target.closest ? ev.target.closest('.mvRow') : null;
+    if (!rowEl || !rowEl.dataset.mvi) return;
+    setReplay(parseInt(rowEl.dataset.mvi, 10));
+  });
+  mvPrevEl.addEventListener('click', function () { if (replayIdx > 0) setReplay(replayIdx - 1); });
+  mvNextEl.addEventListener('click', function () { setReplay(replayIdx + 1); });
+  document.getElementById('mvLast').addEventListener('click', exitReplay);
+  mvRestartEl.addEventListener('click', restartFrom);
+  function closeMoves() {
+    exitReplay();
+    movesBoxEl.hidden = true;
+    if (reviewBusy) {           // 창을 닫으면 돌던 복기는 멈춘다 (엔진을 계속 붙잡지 않게)
+      reviewToken++;
+      reviewBusy = false;
+      updateReviewBtn();
+    }
+  }
+  document.getElementById('mvClose').addEventListener('click', closeMoves);
+  movesBoxEl.addEventListener('click', function (ev) {
+    if (ev.target === movesBoxEl) closeMoves();
+  });
+  // ---- 도움말 창 ---------------------------------------------------------
+  const helpBoxEl = document.getElementById('helpBox');
+  const hpBodyEl = document.getElementById('hpBody');
+  function hideHelp() { helpBoxEl.hidden = true; }
+  document.getElementById('helpBtn').addEventListener('click', function () {
+    hpBodyEl.scrollTop = 0;         // 언제나 처음부터 보이게
+    helpBoxEl.hidden = false;
+  });
+  document.getElementById('hpClose').addEventListener('click', hideHelp);
+  helpBoxEl.addEventListener('click', function (ev) { if (ev.target === helpBoxEl) hideHelp(); });
+
+  window.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') {
+      if (!guardBoxEl.hidden) { guardAnswer(false); return; }   // 실수 확인 창이 떠 있으면 그것부터
+      hideResult(); exitReplay(); movesBoxEl.hidden = true; hideHelp();
+    }
+  });
+
+  // ---- 시작 ---------------------------------------------------------------
+  // 지난 판이 저장되어 있으면 먼저 이어서 둘지 묻는다 (고른 뒤에 이어서 두거나 새로 시작한다).
+  // loadSave() 를 newGame() 보다 먼저 불러야 한다 — newGame() 이 저장본을 지우기 때문이다.
+  pendingSave = loadSave();
+  newGame();
+  if (pendingSave) {
+    // newGame() 이 저장본을 지웠으므로 되돌려 놓는다. 고르기 전에 창을 닫아도 판이 사라지지 않고,
+    // 다음에 열 때 이어하기 창이 다시 뜬다.
+    try { localStorage.setItem(SAVE_KEY, pendingRaw); } catch (e) { /* 저장이 막혀도 대국은 계속된다 */ }
+    aiToken++;                 // 묻는 동안 AI 가 먼저 두지 않게 한다
+    thinking = false;
+    showResume(pendingSave);
+    updateStatus();
+  }
+})();
+</script>
+</body>
+</html>
