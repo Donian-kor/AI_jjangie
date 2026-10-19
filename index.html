@@ -209,7 +209,7 @@
   }
   #boardBal { flex: 0 0 168px; }
   /* 창을 줄이는 순간을 대비한 가로 스크롤 안전장치 (판 크기 상한 때문에 실제로는 거의 쓰이지 않는다) */
-  #boardWrap { flex: 1 1 auto; min-width: 0; padding: 0 8px; overflow-x: auto; }
+  #boardWrap { flex: 0 1 auto; min-width: 0; padding: 0 8px; overflow-x: auto; }
   #sideCol { flex: 0 0 168px; display: flex; flex-direction: column; gap: 10px; }
   #actBtns { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
   #actBtns button {
@@ -1986,10 +1986,13 @@
   layoutSel.addEventListener('change', newGame);
   oppSel.addEventListener('change', newGame);
   let resizeRaf = 0;                 // 연속 resize 를 한 프레임에 한 번으로 모은다
+  let lastLayoutW = 0;               // 높이만 바뀐 resize(모바일 주소창 등)에는 판 크기를 다시 계산하지 않는다
   window.addEventListener('resize', function () {
+    if (window.innerWidth === lastLayoutW) return;   // 높이 변화만 있으면 무시 (스크롤 중 판이 출렁이는 것 방지)
     if (resizeRaf) return;
-    resizeRaf = requestAnimationFrame(function () { resizeRaf = 0; layout(); refresh(); });
+    resizeRaf = requestAnimationFrame(function () { resizeRaf = 0; lastLayoutW = window.innerWidth; layout(); refresh(); });
   });
+  lastLayoutW = window.innerWidth;
 
   // ---- 디자인 선택 ------------------------------------------------------
   const pieceSel = document.getElementById('pieceSel');
