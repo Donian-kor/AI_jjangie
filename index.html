@@ -451,9 +451,9 @@
   #helpBox .mvHead span:last-child { font-size: 11px; font-weight: normal; letter-spacing: 0; color: #a89372; }
   /* 화면이 좁으면 전적을 판 아래로 내린다 */
   @media (max-width: 760px) {
-    #playArea { flex-wrap: wrap; }
+    #playArea { flex-wrap: wrap; padding: 0 2px; }
     #boardBal { display: none; }
-    #boardWrap { flex: 1 1 100%; }
+    #boardWrap { flex: 1 1 100%; padding: 0; }
     #sideCol { flex: 1 1 100%; }
     /* 좁은 화면에서는 헤더를 최대한 조밀하게 (판에 쓸 세로 공간 확보) */
     header { max-width: 100%; padding: 6px 4px 2px; }
@@ -1021,7 +1021,10 @@
 
   // ---- 보드 크기 계산 ----
   function layout() {
-    const paW = playAreaEl.clientWidth - 16;   // #playArea 좌우 8px 여백 제외
+    // 좁은 화면(≤760px)의 #playArea 좌우 여백은 2px, #boardWrap 여백은 0이라
+    // 실제로 빼야 할 값은 합계 4다. (CSS 와 어긋나면 판이 작아지거나 스크롤이 생긴다)
+    const narrowPad = window.matchMedia('(max-width: 760px)').matches ? 4 : 16;
+    const paW = playAreaEl.clientWidth - narrowPad;
     // 모바일에서 스크롤 시 주소창이 숨겨지며 innerHeight 가 바뀌어도 판 크기가
     // 출렁이지 않도록, 높이는 '플레이 영역 위쪽 크롬(헤더·상태·여백)'을 실제로
     // 측정해 계산한다. (고정 210px 추정은 헤더가 줄바꿈되는 좁은 화면에서 어긋났다)
@@ -1033,11 +1036,10 @@
     // (여백을 40px 로 어림잡던 예전 계산은 캔버스를 판 밖으로 18px 삐져나오게 했다)
     // 전적·단추는 PC 에서 항상 판 오른쪽에 둔다. 판이 쓸 수 있는 폭은 창 폭에서
     // 전적·단추 자리(168+168)와 사이 여백(36), #boardWrap 좌우 여백(16)을 뺀 만큼이고
-    // (좁은 화면은 전적이 판 아래로 가므로 창 폭을 그대로 쓴다), 그 폭과 창 높이에
-    // 맞는 크기가 100% 다. 가로 스크롤이 생기지 않게 이 크기를 넘지 않는다
+    // (좁은 화면은 전적이 판 아래로 가므로 paW 를 그대로 쓴다)
     // CSS 의 @media (max-width: 760px) 와 같은 기준을 쓴다 (창 폭만 보면 스크롤바 폭 때문에 어긋난다)
     const narrow = window.matchMedia('(max-width: 760px)').matches;
-    const availW = narrow ? paW - 16 : paW - 168 - 168 - 36 - 16;
+    const availW = narrow ? paW : paW - 168 - 168 - 36 - 16;
     const fit = Math.min((availW - 1) / 9, (maxH - 1) / 10);
     cell = Math.max(28, Math.floor(fit * Math.min(zoomPct, 100) / 100));
     pad = Math.round(cell * 0.5);
