@@ -1998,13 +1998,25 @@
   layoutSel.addEventListener('change', newGame);
   oppSel.addEventListener('change', newGame);
   let resizeRaf = 0;                 // 연속 resize 를 한 프레임에 한 번으로 모은다
-  let lastLayoutW = 0;               // 높이만 바뀐 resize(모바일 주소창 등)에는 판 크기를 다시 계산하지 않는다
-  window.addEventListener('resize', function () {
-    if (window.innerWidth === lastLayoutW) return;   // 높이 변화만 있으면 무시 (스크롤 중 판이 출렁이는 것 방지)
+  let lastLayoutW = 0;
+  function doLayoutIfWidthChanged(w) {
+    if (w === lastLayoutW) return;
     if (resizeRaf) return;
-    resizeRaf = requestAnimationFrame(function () { resizeRaf = 0; lastLayoutW = window.innerWidth; layout(); refresh(); });
-  });
+    resizeRaf = requestAnimationFrame(function () { resizeRaf = 0; lastLayoutW = w; layout(); refresh(); });
+  }
   lastLayoutW = window.innerWidth;
+  // ResizeObserver 가 있으면 플레이 영역의 실제 크기 변화를 감지한다 (폴더블 기기의
+  // 펼침/접힘, 주소창 show/hide, 회전 등 모든 경우를 커버). 없으면 resize 이벤트로 폴백.
+  if (typeof ResizeObserver !== 'undefined' && playAreaEl) {
+    const ro = new ResizeObserver(function (entries) {
+      const w = Math.round(entries[0].contentRect.width + 16); // playArea padding 보정
+      doLayoutIfWidthChanged(w);
+    });
+    ro.observe(playAreaEl);
+  } else {
+    window.addEventListener('resize', function () { doLayoutIfWidthChanged(window.innerWidth); });
+  }
+  window.addEventListener('orientationchange', function () { doLayoutIfWidthChanged(window.innerWidth); });
 
   // ---- 디자인 선택 ------------------------------------------------------
   const pieceSel = document.getElementById('pieceSel');
