@@ -450,11 +450,19 @@
   #helpBox .hpFoot { margin-top: 8px; font-size: 11px; color: #a89372; text-align: center; }
   #helpBox .mvHead span:last-child { font-size: 11px; font-weight: normal; letter-spacing: 0; color: #a89372; }
   /* 화면이 좁으면 전적을 판 아래로 내린다 */
-  @media (max-width: 700px) {
+  @media (max-width: 760px) {
     #playArea { flex-wrap: wrap; }
     #boardBal { display: none; }
     #boardWrap { flex: 1 1 100%; }
     #sideCol { flex: 1 1 100%; }
+    /* 좁은 화면에서는 헤더를 더 조밀하게 (판에 쓸 세로 공간 확보) */
+    header { padding: 8px 6px 2px; }
+    h1 { font-size: 18px; margin: 0 0 6px; }
+    .panel { padding: 6px 8px; }
+    .prow { gap: 4px 5px; }
+    .prow + .prow { margin-top: 5px; padding-top: 5px; }
+    .fld > span { font-size: 11px; }
+    select, button { font-size: 12px; }
   }
   /* '움직임 줄이기'를 켠 분에게는 깜빡임·번쩍임 장식을 쓰지 않는다 */
   @media (prefers-reduced-motion: reduce) {
@@ -1012,7 +1020,11 @@
   // ---- 보드 크기 계산 ----
   function layout() {
     const paW = playAreaEl.clientWidth - 16;   // #playArea 좌우 8px 여백 제외
-    const maxH = Math.max(320, window.innerHeight - 210);
+    // 모바일에서 스크롤 시 주소창이 숨겨지며 innerHeight 가 바뀌어도 판 크기가
+    // 출렁이지 않도록, 높이는 '플레이 영역 위쪽 크롬(헤더·상태·여백)'을 실제로
+    // 측정해 계산한다. (고정 210px 추정은 헤더가 줄바꿈되는 좁은 화면에서 어긋났다)
+    const playAreaTop = playAreaEl.getBoundingClientRect().top;
+    const maxH = Math.max(320, window.innerHeight - playAreaTop - 24);
     // 보드 SVG 는 viewBox 900x1000 이고 좌우·상하 50 여백 + 한 칸 100 단위다.
     // 여백을 한 칸의 0.5배로 잡으면 이미지 격자와 정확히 겹친다.
     // 그래서 판 전체는 가로 9칸, 세로 10칸 크기가 된다.
@@ -1021,8 +1033,8 @@
     // 전적·단추 자리(168+168)와 사이 여백(36), #boardWrap 좌우 여백(16)을 뺀 만큼이고
     // (좁은 화면은 전적이 판 아래로 가므로 창 폭을 그대로 쓴다), 그 폭과 창 높이에
     // 맞는 크기가 100% 다. 가로 스크롤이 생기지 않게 이 크기를 넘지 않는다
-    // CSS 의 @media (max-width: 700px) 와 같은 기준을 쓴다 (창 폭만 보면 스크롤바 폭 때문에 어긋난다)
-    const narrow = window.matchMedia('(max-width: 700px)').matches;
+    // CSS 의 @media (max-width: 760px) 와 같은 기준을 쓴다 (창 폭만 보면 스크롤바 폭 때문에 어긋난다)
+    const narrow = window.matchMedia('(max-width: 760px)').matches;
     const availW = narrow ? paW - 16 : paW - 168 - 168 - 36 - 16;
     const fit = Math.min((availW - 1) / 9, (maxH - 1) / 10);
     cell = Math.max(28, Math.floor(fit * Math.min(zoomPct, 100) / 100));
