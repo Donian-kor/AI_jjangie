@@ -455,14 +455,16 @@
     #boardBal { display: none; }
     #boardWrap { flex: 1 1 100%; }
     #sideCol { flex: 1 1 100%; }
-    /* 좁은 화면에서는 헤더를 더 조밀하게 (판에 쓸 세로 공간 확보) */
-    header { padding: 8px 6px 2px; }
-    h1 { font-size: 18px; margin: 0 0 6px; }
-    .panel { padding: 6px 8px; }
-    .prow { gap: 4px 5px; }
-    .prow + .prow { margin-top: 5px; padding-top: 5px; }
-    .fld > span { font-size: 11px; }
-    select, button { font-size: 12px; }
+    /* 좁은 화면에서는 헤더를 최대한 조밀하게 (판에 쓸 세로 공간 확보) */
+    header { max-width: 100%; padding: 6px 4px 2px; }
+    h1 { font-size: 16px; margin: 0 0 4px; letter-spacing: 1px; }
+    h1 .ver { font-size: 10px; padding: 1px 5px; }
+    .panel { padding: 4px 6px; }
+    .prow { gap: 3px 4px; }
+    .prow + .prow { margin-top: 4px; padding-top: 4px; }
+    .fld > span { font-size: 10px; }
+    select, button { font-size: 11px; }
+    #status { font-size: 13px; }
   }
   /* '움직임 줄이기'를 켠 분에게는 깜빡임·번쩍임 장식을 쓰지 않는다 */
   @media (prefers-reduced-motion: reduce) {
