@@ -209,7 +209,7 @@
   }
   #boardBal { flex: 0 0 168px; }
   /* 창을 줄이는 순간을 대비한 가로 스크롤 안전장치 (판 크기 상한 때문에 실제로는 거의 쓰이지 않는다) */
-  #boardWrap { flex: 0 1 auto; min-width: 0; max-width: 100%; padding: 0 8px; overflow-x: auto; }
+  #boardWrap { flex: 1 1 auto; min-width: 0; max-width: 100%; padding: 0 8px; overflow-x: auto; }
   #sideCol { flex: 0 0 168px; display: flex; flex-direction: column; gap: 10px; }
   #actBtns { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
   #actBtns button {
@@ -502,6 +502,21 @@
     line-height: 1.7;
   }
   footer .credit a { color: #6b4a2b; }
+  /* 접근성 개선 */
+  body { font-size: 17px; line-height: 1.6; }
+  .panel button, #actBtns button, #mvStep button, #mvRestart, #recReset, #recExport, #recImport, #hpClose, #gdCancel, #gdGo, #rsNext, #rsUndo, #rsNew, #resClose { font-size: 16px; padding: 12px 16px; min-height: 48px; }
+  .mvRow, .mvText, .mvNo, .mvWho, .mvHead, .mvNote, .mvEval, .mvBadge, .mvBetter, .mvFoot, .mvStepTxt { font-size: 15px; }
+  .mvHead { font-size: 17px; }
+  .mvStepTxt { font-size: 15px; }
+  #mvList { font-size: 15px; }
+  #mvEmpty { font-size: 15px; }
+  .mvRow { min-height: 52px; }
+  .mvExplain { font-size: 12.5px; color: #4a3a25; margin-top: 2px; line-height: 1.4; }
+  .mvExplain .why { font-weight: bold; color: #8d6e3a; }
+  .engineEval { font-size: 13px; color: #33291c; background: #f7eed8; border: 1px solid #e3d6b6; border-radius: 6px; padding: 4px 8px; margin-top: 6px; text-align: center; }
+  .engineEval.plus { color: #1e7a4a; }
+  .engineEval.minus { color: #b3512a; }
+  .engineEval[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -667,6 +682,7 @@
   <div class="mvCard">
     <div class="mvHead"><span>기보</span><span id="mvCount"></span></div>
     <div class="mvNote" id="mvNote">좌표는 초(楚) 기준 · 수를 누르면 그 장면을 봅니다</div>
+    <div id="engineEval" class="engineEval" hidden></div>
     <div id="mvList"></div>
     <div id="mvStep" hidden>
       <button id="mvPrev" type="button" title="한 수 전으로">◀</button>
@@ -1009,7 +1025,7 @@
     }
     if (game.check && !game.result) flashCheck();   // 장군이면 판이 잠깐 붉게 번쩍인다
     renderCaptured();
-    if (!pc || !MOVE_MS) { updateStatus(); refresh(); if (done) done(); showResultIfOver(); return; }
+    if (!pc || !MOVE_MS) { updateStatus(); refresh(); if (done) done(); showResultIfOver(); refreshEngineEval(); return; }
     anim = { move, pc: { side: pc.side, type: pc.type }, cap, t0: performance.now(), dur: MOVE_MS, done };
     updateStatus();
     refresh();
@@ -1020,6 +1036,7 @@
     refresh();
     if (d) d();
     showResultIfOver();
+    refreshEngineEval();   // 판이 바뀌었으니 AI 평가를 다시 받는다
   }
 
   // ---- 보드 크기 계산 ----
@@ -1038,13 +1055,14 @@
     // 그래서 판 전체는 가로 9칸, 세로 10칸 크기가 된다.
     // (여백을 40px 로 어림잡던 예전 계산은 캔버스를 판 밖으로 18px 삐져나오게 했다)
     // 전적·단추는 PC 에서 항상 판 오른쪽에 둔다. 판이 쓸 수 있는 폭은 창 폭에서
-    // 전적·단추 자리(168+168)와 사이 여백(36), #boardWrap 좌우 여백(16)을 뺀 만큼이고
+    // 오른쪽 전적·단추 자리(168)와 사이 여백(36), #boardWrap 좌우 여백(16)을 뺀 만큼이고
+    // 왼쪽 boardBal(168)은 판을 가운데에 두기 위한 여유 공간이므로, 판이 넓어지면 자연스럽게 줄어든다.
     // (좁은 화면은 전적이 판 아래로 가므로 paW 를 그대로 쓴다.
     //  좁은 화면은 세로 스크롤로 보면 되므로 높이 제한을 풀고 폭에 꽉 맞춘다.
     //  그렇지 않으면 높이 때문에 판이 작아져 좌우에 빈 공간이 남는다)
     // CSS 의 @media (max-width: 760px) 와 같은 기준을 쓴다 (창 폭만 보면 스크롤바 폭 때문에 어긋난다)
     const narrow = window.matchMedia('(max-width: 760px)').matches;
-    const availW = narrow ? paW : paW - 168 - 168 - 36 - 16;
+    const availW = narrow ? paW : paW - 168 - 36 - 16;
     const fit = narrow ? (availW - 1) / 9 : Math.min((availW - 1) / 9, (maxH - 1) / 10);
     // 23번: 판이 너무 작아지지 않게 한 칸(cell) 최소 크기를 둔다.
     // 한 칸이 34보다 작아지면 말이 알아보기 힘들다. (예전 28 → 34)
@@ -1595,6 +1613,7 @@
       } else {
         updateStatus();
       }
+      refreshEngineEval();     // AI 가 둔 뒤 국면을 다시 평가한다
     }, 60);
   }
 
@@ -1958,6 +1977,7 @@
     renderCaptured();
     renderRecord();     // 난이도가 바뀌었으면 그 난이도의 전적을 보여 준다
     updateStatus();
+    refreshEngineEval();   // 새 국면의 평가를 다시 받는다 (기보 창이 열려 있을 때만)
     if (!vsHuman && !game.result && game.turn !== humanSide) scheduleAI();
   }
   function newGame(stage) {
@@ -2010,6 +2030,7 @@
     refresh();
     updateStatus();
     saveGame();          // 이어하기: 되돌린 판을 저장한다 (아무것도 안 남았으면 지운다)
+    refreshEngineEval();  // 판이 바뀌었으니 평가를 다시 받는다
     // 되돌린 뒤 차례가 AI 라면 AI 가 다시 둔다.
     // (한(漢)을 골라 AI 가 먼저 둔 수를 무르면 이 상태가 된다 — 두지 않고 멈추지 않게)
     if (!vsHuman && !game.result && game.turn !== humanSide) scheduleAI();
@@ -2445,6 +2466,7 @@
   const mvPrevEl = document.getElementById('mvPrev');
   const mvNextEl = document.getElementById('mvNext');
   const mvRestartEl = document.getElementById('mvRestart');
+  const engineEvalEl = document.getElementById('engineEval');
   // 기보에 필요한 [두기 전 판, 수] 목록. game.history[k] 는 'k번째 수를 두기 전' 상태다.
   // 그래서 k번째 수는 history[k].lastMove 이고, 그 수를 두기 전 판은 history[k-1].board 다.
   function moveItems() {
@@ -2493,6 +2515,7 @@
     statusEl.className = '';
     statusEl.innerHTML = '기보를 되짚어 보는 중입니다 ' +
       '<span style="font-size:14px;letter-spacing:0">(' + replayIdx + '/' + items.length + '수)</span>';
+    renderEngineEval();     // 보는 국면과 다르므로 평가를 숨긴다
     refresh();
   }
   function exitReplay() {
@@ -2504,6 +2527,7 @@
     renderMoves();
     updateStatus();
     refresh();
+    clearEngineEval();      // 보던 국면의 평가는 치운다 (아래에서 새 판이면 다시 받는다)
   }
   // 보는 국면부터 새 판으로 이어 둔다 (지난 판은 이미 결과가 전적에 남아 있다)
   function restartFrom() {
@@ -2578,23 +2602,28 @@
       let mark = '';
       let better = '';
       const row = review ? review.rows[i] : null;
+      let explain = '';
       if (row) {
         const ev = fmtEval(row.v);
         if (ev) {
           mark += '<span class="mvEval' + (row.v > 50 ? ' plus' : row.v < -50 ? ' minus' : '') + '">' + ev + '</span>';
         }
         if (row.flag) {
-          mark += '<span class="mvBadge ' + row.flag + '">' + (row.flag === 'big' ? '큰 실수' : '아쉬움') + '</span>';
+          const why = row.flag === 'big' ? '큰 실수' : '아쉬운 수';
+          mark += '<span class="mvBadge ' + row.flag + '">' + why + '</span>';
           if (row.better) {
             better = '<div class="mvBetter">대신: ' + row.better + ' (' + lossText(row.loss) + ')</div>';
+            explain = '<div class="mvExplain">이 수는 <b>' + why + '</b>예요. 대신: ' + row.better + ' (' + lossText(row.loss) + ')</div>';
           }
+        } else if (ev) {
+          explain = '<div class="mvExplain">이 수는 둔 쪽 기준 약 ' + ev + '점이에요</div>';
         }
       }
       html += '<div class="mvRow clickable' + (replayIdx === i + 1 ? ' cur' : '') +
         '" data-mvi="' + (i + 1) + '">' +
         '<span class="mvNo">' + (i + 1) + '</span>' +
         '<span class="mvWho ' + q.whoCls + '">' + q.who + '</span>' +
-        '<span class="mvText">' + q.text + '</span>' + mark + '</div>' + better;
+        '<span class="mvText">' + q.text + '</span>' + mark + '</div>' + better + explain;
     }
     mvListEl.innerHTML = html;
     // 실시간으로 볼 땐 최근 수가 보이게 내리고, 기보를 되짚어 보는 중엔 그 수가 보이게 맞춘다
@@ -2654,6 +2683,9 @@
     kibKey = '';
     kibBase = null;
     mateWarn = null;
+    evalToken++;              // 돌던 AI 평가도 무효화한다
+    evalInfo = null;
+    renderEngineEval();
   }
   function fmtEval(v) {
     if (v === null || v === undefined) return '';
@@ -2674,9 +2706,87 @@
   function evalCp(r) {
     if (!r) return null;
     if (r.mate !== null && r.mate !== undefined) {
+      if (r.mate === 0) return 0;
       return (r.mate > 0 ? 30000 : -30000) - r.mate * 10;
     }
     return r.cp === null ? null : r.cp;
+  }
+
+  // ---- AI 평가 (지금 국면이 누구에게 유리한지) ---------------------------
+  const EVAL_MS = 400;      // AI 평가에 주는 탐색 시간
+  let evalToken = 0;        // 새 계산이 시작됐으면 이전 답은 버린다
+  let evalInfo = null;      // { cp, uci } — 내(사람) 관점 점수
+  // 평가를 지우고, 늦게 도착할 평가 답은 버린다
+  function clearEngineEval() {
+    evalToken++;
+    evalInfo = null;
+    renderEngineEval();
+  }
+  function evalSide() {
+    // 사람끼리 대국이면 지금 차례인 쪽, AI와 두면 내 쪽을 기준으로 본다
+    return vsHuman ? game.turn : humanSide;
+  }
+  function evalSideName(side) {
+    return side === J.CHO ? '초' : '한';
+  }
+  function renderEngineEval() {
+    if (!engineEvalEl) return;
+    // 평가한 뒤 판이 바뀌었으면(차례가 바뀌었으면 관점도 달라진다) 보여 주지 않는다
+    // 기보를 되짚어 보는 중이면 화면과 평가의 국면이 다르므로 숨긴다
+    if (!evalInfo || evalInfo.cp === null || evalInfo.turn !== game.turn || viewState) {
+      engineEvalEl.hidden = true;
+      engineEvalEl.innerHTML = '';
+      return;
+    }
+    const cp = evalInfo.cp;
+    const name = evalSideName(evalSide());
+    let head;
+    if (cp >= 20000) head = name + ' 쪽 승리 임박';
+    else if (cp <= -20000) head = name + ' 쪽 패배 임박';
+    else {
+      const t = Math.abs(cp) < 5 ? 0 : cp / 100;
+      const word = t > 0.2 ? '유리' : t < -0.2 ? '불리' : '거의 비김';
+      head = name + ' 쪽 ' + (t > 0 ? '+' : '') + t.toFixed(1) + '점 (' + word + ')';
+    }
+    let best = '';
+    if (evalInfo.uci) {
+      const mv = JanggiFS.uciToMove(evalInfo.uci);
+      // 추천 수가 지금 판에서 둘 수 있는 수일 때만 보여 준다
+      if (mv && game.board[mv.fr] && game.board[mv.fr][mv.fc]) {
+        best = ' · 추천 수: ' + moveParts(game.board, mv).text;
+      }
+    }
+    engineEvalEl.innerHTML = 'AI 평가: ' + head + best;
+    engineEvalEl.className = 'engineEval' + (cp > 50 ? ' plus' : cp < -50 ? ' minus' : '');
+    engineEvalEl.hidden = false;
+  }
+  // 지금 국면을 엔진에게 물어 본다 (기보 창이 열려 있을 때만 부른다)
+  async function refreshEngineEval() {
+    // 기보 창이 닫혀 있으면 평가할 필요가 없다.
+    // (닫아 둔 채로 매 수마다 탐색하면 엔진이 AI 응답을 늦춘다)
+    if (!engine || engineState !== 'ready' || movesBoxEl.hidden) {
+      clearEngineEval();
+      return;
+    }
+    // AI 의 차례면 남은 평가는 옛 국면 것이니 지운다
+    if (!vsHuman && game.turn !== humanSide) {
+      clearEngineEval();
+      return;
+    }
+    if (thinking || anim || guardBusy) return;   // AI 가 수를 고르는 중이면 건드리지 않는다
+    if (viewState) return;                     // 되돌아보는 중이면 평가하지 않는다
+    const token = ++evalToken;
+    const turnAt = game.turn;                 // 요청할 때의 차례 (응답이 늦게 와도 그대로 기록)
+    const fen = JanggiFS.boardToFen(game.board, turnAt);
+    try {
+      const r = await engine.analyze(fen, EVAL_MS);
+      if (token !== evalToken) return;            // 더 새 계산이 있으면 이 답은 버린다
+      // 엔진 점수는 '지금 둘 차례인 쪽' 기준이라 그대로 내(사람) 관점이다
+      evalInfo = { cp: evalCp(r), uci: r ? r.uci : null, turn: turnAt };
+    } catch (e) {
+      if (token === evalToken) evalInfo = null;
+    }
+    renderEngineEval();
   }
   async function reviewGame() {
     if (reviewBusy || !engine || !game.result) return;
@@ -2878,6 +2988,7 @@
   document.getElementById('movesBtn').addEventListener('click', function () {
     renderMoves();
     movesBoxEl.hidden = false;
+    refreshEngineEval();     // AI 평가(지금 국면 점수)를 보여 준다
   });
   // 수를 누르면 그 장면 보기, ◀ ▶ 로 넘기기, 최신/닫기로 실시간으로 복귀
   mvListEl.addEventListener('click', function (ev) {
@@ -2887,11 +2998,16 @@
   });
   mvPrevEl.addEventListener('click', function () { if (replayIdx > 0) setReplay(replayIdx - 1); });
   mvNextEl.addEventListener('click', function () { setReplay(replayIdx + 1); });
-  document.getElementById('mvLast').addEventListener('click', exitReplay);
+  // '최신' 버튼: 되돌아보기에서 실시간으로 돌아온다 (지금 국면을 다시 평가한다)
+  document.getElementById('mvLast').addEventListener('click', function () {
+    exitReplay();
+    refreshEngineEval();
+  });
   mvRestartEl.addEventListener('click', restartFrom);
   function closeMoves() {
     exitReplay();
     movesBoxEl.hidden = true;
+    clearEngineEval();      // 닫은 뒤에 도착할 평가 답은 버린다
     if (reviewBusy) {           // 창을 닫으면 돌던 복기는 멈춘다 (엔진을 계속 붙잡지 않게)
       reviewToken++;
       reviewBusy = false;
@@ -2916,7 +3032,7 @@
   window.addEventListener('keydown', function (ev) {
     if (ev.key === 'Escape') {
       if (!guardBoxEl.hidden) { guardAnswer(false); return; }   // 실수 확인 창이 떠 있으면 그것부터
-      hideResult(); exitReplay(); movesBoxEl.hidden = true; hideHelp();
+      hideResult(); closeMoves(); hideHelp();
     }
   });
 
