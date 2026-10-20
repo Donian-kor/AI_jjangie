@@ -236,7 +236,7 @@
           case 'C': cannonMoves(moves, b, r, c, side); break;
           case 'N': horseMoves(moves, b, r, c, side); break;
           case 'E': elephantMoves(moves, b, r, c, side); break;
-          case 'G': kingMoves(moves, b, r, c, side); break; // 사는 장과 동일
+          case 'G': kingMoves(moves, b, r, c, side); break;
           case 'K': kingMoves(moves, b, r, c, side); break;
           case 'P': pawnMoves(moves, b, r, c, side); break;
         }
