@@ -209,7 +209,7 @@
   }
   #boardBal { flex: 0 0 168px; }
   /* 창을 줄이는 순간을 대비한 가로 스크롤 안전장치 (판 크기 상한 때문에 실제로는 거의 쓰이지 않는다) */
-  #boardWrap { flex: 0 1 auto; min-width: 0; padding: 0 8px; overflow-x: auto; }
+  #boardWrap { flex: 0 1 auto; min-width: 0; max-width: 100%; padding: 0 8px; overflow-x: auto; }
   #sideCol { flex: 0 0 168px; display: flex; flex-direction: column; gap: 10px; }
   #actBtns { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; }
   #actBtns button {
@@ -453,7 +453,7 @@
   @media (max-width: 760px) {
     #playArea { flex-wrap: wrap; padding: 0 2px; }
     #boardBal { display: none; }
-    #boardWrap { flex: 1 1 100%; padding: 0; }
+    #boardWrap { flex: 1 1 100%; max-width: 100%; padding: 0; overflow-x: visible; }
     #sideCol { flex: 1 1 100%; }
     /* 좁은 화면에서는 헤더를 최대한 조밀하게 (판에 쓸 세로 공간 확보) */
     header { max-width: 100%; padding: 6px 4px 2px; }
@@ -475,6 +475,8 @@
   canvas {
     display: block;
     margin: 0 auto;
+    max-width: 100%;
+    height: auto;
     border-radius: 10px;
     box-shadow: 0 4px 14px rgba(0,0,0,.18);
     touch-action: manipulation;
@@ -1036,11 +1038,13 @@
     // (여백을 40px 로 어림잡던 예전 계산은 캔버스를 판 밖으로 18px 삐져나오게 했다)
     // 전적·단추는 PC 에서 항상 판 오른쪽에 둔다. 판이 쓸 수 있는 폭은 창 폭에서
     // 전적·단추 자리(168+168)와 사이 여백(36), #boardWrap 좌우 여백(16)을 뺀 만큼이고
-    // (좁은 화면은 전적이 판 아래로 가므로 paW 를 그대로 쓴다)
+    // (좁은 화면은 전적이 판 아래로 가므로 paW 를 그대로 쓴다.
+    //  좁은 화면은 세로 스크롤로 보면 되므로 높이 제한을 풀고 폭에 꽉 맞춘다.
+    //  그렇지 않으면 높이 때문에 판이 작아져 좌우에 빈 공간이 남는다)
     // CSS 의 @media (max-width: 760px) 와 같은 기준을 쓴다 (창 폭만 보면 스크롤바 폭 때문에 어긋난다)
     const narrow = window.matchMedia('(max-width: 760px)').matches;
     const availW = narrow ? paW : paW - 168 - 168 - 36 - 16;
-    const fit = Math.min((availW - 1) / 9, (maxH - 1) / 10);
+    const fit = narrow ? (availW - 1) / 9 : Math.min((availW - 1) / 9, (maxH - 1) / 10);
     cell = Math.max(28, Math.floor(fit * Math.min(zoomPct, 100) / 100));
     pad = Math.round(cell * 0.5);
     const w = pad * 2 + cell * 8;
