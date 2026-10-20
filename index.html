@@ -178,7 +178,7 @@
     transition: opacity .18s;
   }
   .tip.on { opacity: 1; }
-  /* 기물 설명 풍선 — 판 위의 말에 마우스를 올리면 뜬다 */
+  /* 기물 설명 풍선 — 마우스를 올리거나 손가락으로 말을 누르면 뜬다 */
   #pieceTip {
     position: fixed;
     z-index: 20;
@@ -694,7 +694,7 @@
         <li>내 말은 언제나 판의 <em>아래쪽</em>에 있습니다. 내 말을 한 번 누르고, 갈 곳을 누르면 그 자리로 갑니다.</li>
         <li><em>사람끼리</em> 대국(2인용)에서는 아래쪽(초·파랑)부터 번갈아 두면 됩니다. AI 는 두지 않습니다.</li>
         <li>말을 고르면 갈 수 있는 자리에 표시가 나타납니다. 같은 말을 다시 누르면 고르기가 풀립니다.</li>
-        <li><em>초보자 도움</em>을 켜면, 판 위의 말에 마우스를 올렸을 때 그 말의 움직임 설명과 기물 가치가 작은 풍선으로 뜹니다.</li>
+        <li><em>초보자 도움</em>을 켜면, 판 위의 말에 마우스를 올리거나 손가락으로 말을 눌렀을 때 그 말의 움직임 설명과 기물 가치가 작은 풍선으로 뜹니다.</li>
         <li>차례·장군(체크)·결과는 판 위의 안내 줄에 나옵니다.</li>
         <li>대국이 시작된 뒤에는 내 색·상대·난이도·차림을 바꿀 수 없습니다. 바꾸려면 <em>새 게임</em>을 누르세요.</li>
       </ul>
@@ -723,7 +723,7 @@
         <li><span class="hpKey">새 게임</span>새 판을 시작합니다. 지금까지 둔 판은 끝난 것으로 기록됩니다.</li>
         <li><span class="hpKey">무르기</span>마지막 수를 되돌립니다. AI 대국에서는 내 수와 AI 수가 한 쌍으로, 사람끼리 대국에서는 한 수씩 돌아갑니다.</li>
         <li><span class="hpKey">힌트</span>AI가 보기에 좋은 수를 판 위에 표시해 줍니다.</li>
-        <li><span class="hpKey">초보자 도움</span>켜면 ① 말에 마우스를 올렸을 때 움직임 설명과 기물 가치가 뜨고, ② 장군일 때 막을 수 있는 말에 주황 링이, ③ 다음 수에 잡힐 수 있는 내 말에 주황 점이 표시되며, ④ 상대가 외통수를 노리기 시작하면 안내 줄이 알려 줍니다. 기본은 꺼짐입니다.</li>
+        <li><span class="hpKey">초보자 도움</span>켜면 ① 말에 마우스를 올리거나 손가락으로 누르면 움직임 설명과 기물 가치가 뜨고, ② 장군일 때 막을 수 있는 말에 주황 링이, ③ 다음 수에 잡힐 수 있는 내 말에 주황 점이 표시되며, ④ 상대가 외통수를 노리기 시작하면 안내 줄이 알려 줍니다. 기본은 꺼짐입니다.</li>
         <li><span class="hpKey">실수 확인</span>켜면 크게 손해 보는 수를 두려 할 때 엔진이 살펴보고 "약 4.2점만큼 손해일 수 있습니다. 그래도 둘까요?" 하고 한 번 물어봅니다. 기본은 꺼짐입니다.</li>
         <li><span class="hpKey">연승 도전</span>초보(1단계)부터 시작해 이길 때마다 난이도가 올라갑니다. 지거나 비기면 도전이 끝나고, 최고 도달 단계는 전적에 남습니다.</li>
         <li><span class="hpKey">상대</span>AI 와 둘지, 같은 화면에서 <em>사람끼리</em> 둘지 고릅니다. 사람끼리 대국에서는 내 색·난이도를 쓰지 않고, 결과도 전적에 남지 않습니다.</li>
@@ -1083,7 +1083,7 @@
 
   // ---- 기물 설명 풍선 ----------------------------------------------------
   // 도움말 창 '말의 움직임'과 같은 내용을, '초보자 도움'이 켜져 있을 때
-  // 판 위의 말에 마우스를 올리면 작은 풍선으로 보여 준다.
+  // 판 위의 말에 마우스를 올리거나 손가락으로 누르면 작은 풍선으로 보여 준다.
   const PIECE_NAME = { R: '차(車)', N: '마(馬)', E: '상(象)', C: '포(包)', G: '사(士)', K: '장(將)' };
   // 기물 값어치(대략 점수): 풍선 설명과 '잡힐 수 있는 말' 표시가 함께 쓴다
   const PIECE_VALUE = { R: 13, C: 7, N: 5, E: 3, G: 2, P: 2, K: 0 };
@@ -1116,7 +1116,7 @@
   function hidePieceTip() { pieceTipEl.hidden = true; }
   canvas.addEventListener('pointermove', function (ev) {
     if (!beginnerHelp) return;                   // 초보자 도움을 켰을 때만 뜬다
-    if (ev.pointerType !== 'mouse') return;      // 손가락 터치에는 뜨지 않는다
+    if (ev.pointerType !== 'mouse') return;      // 손가락은 움직일 때가 아니라 눌러 고를 때 잠깐 보인다
     const g = eventSquare(ev);
     const pc = g ? game.board[g.r][g.c] : null;
     if (!pc) { hidePieceTip(); return; }
@@ -1338,7 +1338,7 @@
   }
 
   // '초보자 도움' 스위치: 켜면 ① 장군 중 막을 수 있는 내 말에 주황 링,
-  // ② 말에 마우스를 올리면 움직임 설명 풍선이 뜬다. 기본 OFF (도움을 원하는 사람만 켠다)
+  // ② 말에 마우스를 올리거나 손가락으로 누르면 움직임 설명 풍선이 뜬다. 기본 OFF (도움을 원하는 사람만 켠다)
   let beginnerHelp = false;
 
   // 장군 중 방어에 쓸 수 있는 내 말 위에 주황 링을 그린다.
@@ -1521,6 +1521,17 @@
       selected = g;
       selectedMoves = legal;
       hideTip();
+      // 22번: 손가락으로 말을 눌러 고르면 그 말의 설명을 잠깐 보여 준다 (초보자 도움 ON일 때만)
+      // draw() 가 풍선을 닫으므로 refresh() 보다 뒤에서 띄운다
+      const touchPc = (beginnerHelp && ev.pointerType !== 'mouse') ? pc : null;
+      const touchX = ev.clientX, touchY = ev.clientY;
+      refresh();
+      if (touchPc) {
+        showPieceTip(touchPc, touchX, touchY);
+        clearTimeout(pieceTipTimer);
+        pieceTipTimer = setTimeout(hidePieceTip, 2200);
+      }
+      return;
     } else {
       clearSelection();
     }
@@ -1530,6 +1541,7 @@
 
   // 잠깐(1.8초) 안내 문구를 띄운다
   let tipTimer = 0;
+  let pieceTipTimer = 0;   // 손가락용 설명 풍선을 잠깐 보여 주고 닫는 예약
   function flashTip(text, ms) {
     tipEl.textContent = text;
     tipEl.className = 'tip on';
@@ -2078,7 +2090,7 @@
   zoomValEl.addEventListener('click', function () { setZoom(100); });   // 가운데 숫자 = 100% 되돌리기
 
   // 초보자 도움(기본 OFF): 장군 중 '지금 움직일 수 있는 내 말'에 주황 링 +
-  // 말에 마우스를 올리면 움직임 설명 풍선. 하나의 스위치로 함께 켜고 끈다.
+  // 말에 마우스를 올리거나 손가락으로 누르면 움직임 설명 풍선. 하나의 스위치로 함께 켜고 끈다.
   const hintSel = document.getElementById('hintSel');
   beginnerHelp = load('janggi.hints', 'off') === 'on';
   hintSel.checked = beginnerHelp;
