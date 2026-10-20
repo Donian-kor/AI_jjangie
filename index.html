@@ -1166,7 +1166,9 @@
 
   function draw() {
     const bw = pad * 2 + cell * 8, bh = pad * 2 + cell * 9;
-    hidePieceTip();      // 판을 다시 그리면 말 위치가 바뀔 수 있으니 설명 풍선은 닫는다
+    // 손가락으로 띄운 설명 풍선은 유지 시간 안에는 닫지 않는다
+    // (다음 프레임 draw가 바로 닫아 버리면 깜빡하고 사라진다)
+    if (Date.now() >= touchTipUntil) hidePieceTip();      // 판을 다시 그리면 말 위치가 바뀔 수 있으니 설명 풍선은 닫는다
     ctx.clearRect(0, 0, bw, bh);
 
     drawBoard(bw, bh);
@@ -1525,6 +1527,7 @@
       // draw() 가 풍선을 닫으므로 refresh() 보다 뒤에서 띄운다
       const touchPc = (beginnerHelp && ev.pointerType !== 'mouse') ? pc : null;
       const touchX = ev.clientX, touchY = ev.clientY;
+      if (touchPc) touchTipUntil = Date.now() + 2200;   // refresh() 안의 draw()가 닫지 않게 먼저 잡는다
       refresh();
       if (touchPc) {
         showPieceTip(touchPc, touchX, touchY);
@@ -1537,11 +1540,13 @@
     }
     refresh();
   }
-  function clearSelection() { selected = null; selectedMoves = []; }
+  // 고르기가 풀리면 손가락 설명 풍선 유지도 끝낸다 (다음 draw가 닫는다)
+  function clearSelection() { selected = null; selectedMoves = []; touchTipUntil = 0; }
 
   // 잠깐(1.8초) 안내 문구를 띄운다
   let tipTimer = 0;
   let pieceTipTimer = 0;   // 손가락용 설명 풍선을 잠깐 보여 주고 닫는 예약
+  let touchTipUntil = 0;   // 이 시각까지는 draw()가 손가락 풍선을 닫지 않는다 (바로 꺼짐 방지)
   function flashTip(text, ms) {
     tipEl.textContent = text;
     tipEl.className = 'tip on';
