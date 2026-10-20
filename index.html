@@ -961,6 +961,7 @@
   const lockNote = document.getElementById('lockNote');
   const tipEl = document.getElementById('tip');
   const pieceTipEl = document.getElementById('pieceTip');
+  let pieceTipMode = null; // 'mouse' | 'touch' — 손가락 풍선은 타이머가 닫을 때까지 유지한다
 
   let cell = 48, pad = 26, flipped = false;
   let zoomPct = 100;            // 판 크기 설정 (60~100%, 10%씩). 100% 가 창에 맞는 최대 크기
@@ -1100,7 +1101,8 @@
     if (pc.type === 'P') return pc.side === J.HAN ? '병(兵)' : '졸(卒)';
     return PIECE_NAME[pc.type] || '';
   }
-  function showPieceTip(pc, x, y) {
+  function showPieceTip(pc, x, y, mode) {
+    pieceTipMode = mode || 'mouse';
     const worth = PIECE_VALUE[pc.type];
     pieceTipEl.innerHTML = '<b>' + pieceTipName(pc) + '</b>' +
       (worth ? ' <span class="pv">약 ' + worth + '점</span>' : '') +
@@ -1119,11 +1121,13 @@
     if (ev.pointerType !== 'mouse') return;      // 손가락은 움직일 때가 아니라 눌러 고를 때 잠깐 보인다
     const g = eventSquare(ev);
     const pc = g ? game.board[g.r][g.c] : null;
-    if (!pc) { hidePieceTip(); return; }
-    showPieceTip(pc, ev.clientX, ev.clientY);
+    if (!pc) { if (pieceTipMode !== 'touch') hidePieceTip(); return; }
+    clearTimeout(pieceTipTimer);   // 손가락 타이머가 마우스 풍선을 먼저 닫지 않게
+    showPieceTip(pc, ev.clientX, ev.clientY, 'mouse');
   });
-  canvas.addEventListener('pointerleave', hidePieceTip);
-  canvas.addEventListener('pointerdown', hidePieceTip);
+  // 손을 떼면 pointerleave 가 오는데, 손가락 풍선까지 닫으면 깜빡임이 된다
+  canvas.addEventListener('pointerleave', function () { if (pieceTipMode !== 'touch') hidePieceTip(); });
+  canvas.addEventListener('pointerdown', function () { if (pieceTipMode !== 'touch') hidePieceTip(); });
 
   // ---- 그리기 ----
   // 보드: 지정한 SVG 가 있으면 그려 쓰고, 없으면 캔버스로 직접 그린다
@@ -1166,9 +1170,9 @@
 
   function draw() {
     const bw = pad * 2 + cell * 8, bh = pad * 2 + cell * 9;
-    // 손가락으로 띄운 설명 풍선은 유지 시간 안에는 닫지 않는다
-    // (다음 프레임 draw가 바로 닫아 버리면 깜빡하고 사라진다)
-    if (Date.now() >= touchTipUntil) hidePieceTip();      // 판을 다시 그리면 말 위치가 바뀔 수 있으니 설명 풍선은 닫는다
+    // 손가락으로 띄운 풍선('touch')은 타이머가 닫을 때까지 유지한다.
+    // 손을 떼면 pointerleave 가 바로 오는데, 여기서 닫아 버리면 0.01초 깜빡임이 된다.
+    if (pieceTipMode !== 'touch') hidePieceTip();      // 판을 다시 그리면 말 위치가 바뀔 수 있으니 설명 풍선은 닫는다
     ctx.clearRect(0, 0, bw, bh);
 
     drawBoard(bw, bh);
@@ -1527,12 +1531,11 @@
       // draw() 가 풍선을 닫으므로 refresh() 보다 뒤에서 띄운다
       const touchPc = (beginnerHelp && ev.pointerType !== 'mouse') ? pc : null;
       const touchX = ev.clientX, touchY = ev.clientY;
-      if (touchPc) touchTipUntil = Date.now() + 2200;   // refresh() 안의 draw()가 닫지 않게 먼저 잡는다
       refresh();
       if (touchPc) {
-        showPieceTip(touchPc, touchX, touchY);
+        showPieceTip(touchPc, touchX, touchY, 'touch');
         clearTimeout(pieceTipTimer);
-        pieceTipTimer = setTimeout(hidePieceTip, 2200);
+        pieceTipTimer = setTimeout(function () { pieceTipMode = null; hidePieceTip(); }, 2200);
       }
       return;
     } else {
@@ -1540,13 +1543,15 @@
     }
     refresh();
   }
-  // 고르기가 풀리면 손가락 설명 풍선 유지도 끝낸다 (다음 draw가 닫는다)
-  function clearSelection() { selected = null; selectedMoves = []; touchTipUntil = 0; }
+  // 고르기가 풀리면 손가락 설명 풍선도 함께 닫는다
+  function clearSelection() {
+    selected = null; selectedMoves = [];
+    if (pieceTipMode === 'touch') { pieceTipMode = null; clearTimeout(pieceTipTimer); hidePieceTip(); }
+  }
 
   // 잠깐(1.8초) 안내 문구를 띄운다
   let tipTimer = 0;
   let pieceTipTimer = 0;   // 손가락용 설명 풍선을 잠깐 보여 주고 닫는 예약
-  let touchTipUntil = 0;   // 이 시각까지는 draw()가 손가락 풍선을 닫지 않는다 (바로 꺼짐 방지)
   function flashTip(text, ms) {
     tipEl.textContent = text;
     tipEl.className = 'tip on';
@@ -2102,7 +2107,7 @@
   hintSel.addEventListener('change', function () {
     beginnerHelp = this.checked;
     save('janggi.hints', beginnerHelp ? 'on' : 'off');
-    if (!beginnerHelp) hidePieceTip();
+    if (!beginnerHelp) { pieceTipMode = null; clearTimeout(pieceTipTimer); hidePieceTip(); }
     updateStatus();            // 표시들 다시 계산 + 외통수 경고 켜고 끄기 + 미리보기 시작
     refresh();
   });
