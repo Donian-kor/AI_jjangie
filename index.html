@@ -1046,7 +1046,9 @@
     const narrow = window.matchMedia('(max-width: 760px)').matches;
     const availW = narrow ? paW : paW - 168 - 168 - 36 - 16;
     const fit = narrow ? (availW - 1) / 9 : Math.min((availW - 1) / 9, (maxH - 1) / 10);
-    cell = Math.max(28, Math.floor(fit * Math.min(zoomPct, 100) / 100));
+    // 23번: 판이 너무 작아지지 않게 한 칸(cell) 최소 크기를 둔다.
+    // 한 칸이 34보다 작아지면 말이 알아보기 힘들다. (예전 28 → 34)
+    cell = Math.max(34, Math.floor(fit * Math.min(zoomPct, 100) / 100));
     pad = Math.round(cell * 0.5);
     const w = pad * 2 + cell * 8;
     const h = pad * 2 + cell * 9;
@@ -2219,6 +2221,9 @@
   const rsNoteEl = document.getElementById('rsNote');
   let pendingSave = null;         // 시작할 때 발견한 저장된 판
   let pendingRaw = '';            // 그 저장본 원문 (고르기 전까지는 지우지 않으려고)
+  // 24번: 탭마다 다른 번호 + 마지막으로 본 저장 시간. 다른 탭이 저장한 판을 덮지 않게 구분한다.
+  const TAB_ID = 't' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  let seenSaveAt = 0;
   resumeOn = load('janggi.resume', '1') !== '0';
   resumeSelEl.checked = resumeOn;
   resumeSelEl.addEventListener('change', function () {
@@ -2229,18 +2234,33 @@
   });
 
   function clearSave() {
+    seenSaveAt = 0;   // 저장본을 지웠으니 다음 저장은 새로 시작한다 (24번)
     try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 저장이 막혀도 대국은 계속된다 */ }
   }
   // 진행 중인 판만 저장한다 (내가 한 수라도 둔 뒤부터, 끝난 판은 지운다)
+  // 24번: 다른 탭에서 둔 판을 덮어쓰지 않게 저장 시간(at)을 넣어 둔다.
+  // 이 탭이 마지막으로 본 저장(at)과 지금 저장된 것이 다르면 남이 바꾼 것이므로
+  // 덮지 않고 '이어하기 물음'을 새로 띄운다.
   function saveGame() {
     if (!game || humanMoves === 0 || game.result) { clearSave(); return; }
     if (!resumeOn) return;
     try {
+      const raw = localStorage.getItem(SAVE_KEY) || '';
+      let other = null;
+      try { other = JSON.parse(raw || 'null'); } catch (e) { other = null; }
+      if (other && other.at && seenSaveAt && other.at !== seenSaveAt && other.tab !== TAB_ID) {
+        // 다른 탭이 새 판을 저장했다 — 이 탭이 덮지 않고 이어하기 물음을 새로 띄운다
+        const p = loadSave();
+        if (p) { pendingSave = p; showResume(p); }
+        return;
+      }
+      seenSaveAt = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         v: 1, side: humanSide, vs: vsHuman ? 'human' : 'ai',
         level: level, layout: layoutSel.value,
         ch: challenge && !vsHuman ? chStage : 0,
         humanMoves: humanMoves, game: game.toData(),
+        at: seenSaveAt, tab: TAB_ID,
       }));
     } catch (e) { /* 저장이 막혀도 대국은 계속된다 */ }
   }
@@ -2253,6 +2273,7 @@
       const g = J.gameFromData(d.game);
       if (!g) return null;
       pendingRaw = raw;
+      seenSaveAt = d.at || 0;   // 이 탭이 마지막으로 본 저장 시간 (24번 충돌 방지용)
       return {
         side: d.side === 'H' ? 'H' : 'C',
         vs: d.vs === 'human' ? 'human' : 'ai',

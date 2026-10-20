@@ -133,6 +133,7 @@
       <li><b>전적 백업</b>(내보내기·가져오기) · <b>연승 도전 모드</b> · <b>기물 가치 표시</b> — 2026-10-19 추가</li>
       <li><b>좁은 화면(갤럭시 폴드 등) 판 좌우를 화면에 꽉 차게</b> — 2026-10-20 추가</li>
       <li><b>손가락으로 말을 눌러 설명 보기</b>(모바일 기물 설명 풍선, 초보자 도움 ON일 때) — 2026-10-20 추가</li>
+      <li><b>판 한 칸 최소 크기</b>(창을 줄여도 말이 알아볼 만큼 유지) · <b>다른 탭 저장 덮어쓰기 방지</b>(이어하기 충돌 방지) — 2026-10-20 추가</li>
     </ul>
   </div>
 
@@ -287,17 +288,17 @@
       </div>
     </div>
     <div class="idea">
-      <input type="checkbox" data-id="23" aria-label="23번 판 크기 최소 하한">
+      <input type="checkbox" data-id="23" aria-label="23번 판 크기 최소 하한" checked disabled data-done>
       <div class="body">
-        <span class="title"><span class="no">23.</span> 판 크기 최소 하한</span>
-        <span class="desc">창을 너무 줄이면 판이 60%보다 작아지기 쉽다. 화면 크기에 따라 ‘최소 60%’를 자동으로 지키거나, 단추로 줄여도 판이 너무 작아지지 않게 한다.</span>
+        <span class="title"><span class="no">23.</span> 판 크기 최소 하한 <span class="badge rank">만듦 10-20</span></span>
+        <span class="desc">창을 너무 줄여도 판 한 칸이 34보다 작아지지 않게 했다. 말이 알아보기 힘들 정도로 작아지지 않는다. (예전 28 → 34)</span>
       </div>
     </div>
     <div class="idea">
-      <input type="checkbox" data-id="24" aria-label="24번 저장 충돌 방지">
+      <input type="checkbox" data-id="24" aria-label="24번 저장 충돌 방지" checked disabled data-done>
       <div class="body">
-        <span class="title"><span class="no">24.</span> 이어하기 저장 충돌 방지</span>
-        <span class="desc">같은 브라우저에서 다른 탭/창을 열었다 닫을 때, 이어하기 데이터가 서로 덮어쓰이지 않게 저장 시간(버전)을 넣어 구분한다.</span>
+        <span class="title"><span class="no">24.</span> 이어하기 저장 충돌 방지 <span class="badge rank">만듦 10-20</span></span>
+        <span class="desc">저장할 때 저장 시간(at)과 탭 번호를 함께 넣는다. 다른 탭이 새 판을 저장했으면 이 탭이 덮지 않고 ‘이어하기 물음’을 새로 띄운다.</span>
       </div>
     </div>
   </div>
@@ -319,7 +320,7 @@
   </div>
 
   <p class="foot">
-    <b>2026-10-20: 22번 구현(손가락으로 말을 눌러 설명 보기). 18번(격언)은 필요 없다고 해서 삭제.</b><br>
+    <b>2026-10-20: 23번(판 한 칸 최소 크기)·24번(다른 탭 저장 덮어쓰기 방지) 구현.</b><br>
     이 문서 위치: 프로젝트 폴더 최상위 <code>아이디어.html</code> · 게임은 <code>index.html</code> 을 두 번 눌러 실행합니다.
   </p>
 
