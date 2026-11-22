@@ -864,6 +864,14 @@
         <li>AI는 <em>Fairy-Stockfish</em>(오픈소스 장기·변형 체스 엔진)를 브라우저 단일 스레드 WebAssembly로 돌립니다.</li>
         <li>인터넷 연결 없이 파일만 열어도 동작합니다.</li>
       </ul>
+
+      <h3>이용 정책 (페어플레이)</h3>
+      <ul>
+        <li>이 프로그램은 <em>연습·학습용</em>입니다. 다른 사이트의 대국에서 AI나 힌트를 이용해 수를 따라 두어 승률·랭킹을 조작하지 마세요.</li>
+        <li><em>힌트</em>는 대국당 <em>최대 3번</em>, 사용 간격 <em>1분</em>으로 제한됩니다.</li>
+        <li>엔진 평가와 추천 수는 대국이 끝난 뒤 <em>복기</em>에서만 볼 수 있습니다.</li>
+        <li>다른 장기 서비스를 이용할 때는 그 서비스의 이용약관을 지켜 주세요.</li>
+      </ul>
     </div>
     <button id="hpClose" type="button" title="도움말 창을 닫습니다">닫기</button>
     <div class="hpFoot">Esc 키를 누르거나 창 바깥을 누르면 닫힙니다</div>
@@ -906,6 +914,11 @@
   let lang = 'hanja';           // 기물 표기: 'hanja'(한자) | 'hangul'(한글)
   let hintMove = null;          // 힌트(추천 수) — 점선 원으로 보여 준다
   let hintBusy = false;         // 힌트를 찾는 중
+  const HINT_MAX = 3;           // 대국당 힌트 사용 횟수
+  const HINT_COOLDOWN_MS = 60000; // 힌트 사용 간격 (1분)
+  let hintUsed = 0;             // 이번 대국에서 쓴 힌트 횟수
+  let hintNextAt = 0;           // 다음 힌트를 쓸 수 있는 시각
+  let hintTimer = 0;            // 쿨다운이 끝나면 버튼 상태를 갱신할 타이머
   let aiToken = 0;              // 오래된 AI 계산 무효화용
   let turnCueEpoch = 0;         // 새 게임·이어하기 때 내 차례 강조를 다시 띄우기 위한 값
   let lastTurnCueKey = null;    // 마지막으로 강조를 띄운 차례 상태
@@ -1573,11 +1586,18 @@
     }
     lastTurnCueKey = key;
   }
+  function hintWaitSec() { return Math.max(0, Math.ceil((hintNextAt - Date.now()) / 1000)); }
   function updateStatus() {
     if (viewState) return;     // 기보를 되짚어 보는 중에는 안내 줄을 그대로 둔다
     undoBtn.disabled = game.history.length === 0 || thinking || guardBusy || !!anim;
+    const hintWait = hintWaitSec();
     hintBtnEl.disabled = thinking || hintBusy || guardBusy || !!game.result ||
-      (!vsHuman && game.turn !== humanSide) || !!anim;
+      (!vsHuman && game.turn !== humanSide) || !!anim ||
+      hintUsed >= HINT_MAX || hintWait > 0;
+    hintBtnEl.title = hintUsed >= HINT_MAX ? '힌트는 대국당 3번까지 사용할 수 있습니다'
+      : hintWait > 0 ? '다음 힌트까지 ' + hintWait + '초 남았습니다'
+      : '엔진에게 내 최선의 수를 묻습니다 (대국당 3번 · 1분 간격, 남은 ' +
+        (HINT_MAX - hintUsed) + '번)';
     syncSettingsLock();
     updateReviewBtn();          // 복기 단추 활성 여부도 함께 갱신한다
     kibitzMaybe();              // 외통수 경고·실수 확인용 미리보기 (뒤에서 조용히)
@@ -2103,6 +2123,10 @@
     resetReview();             // 새 판이면 지난 복기 표시는 지운다
     clearSave();               // 새 판을 시작하므로 저장본을 지운다 (진행 중이던 판은 아래에서 패로 남긴다)
     hintMove = null;
+    hintUsed = 0;              // 새 대국이면 힌트 3회·쿨다운 초기화
+    hintNextAt = 0;
+    clearTimeout(hintTimer);
+    hintTimer = 0;
     // 진행 중이던 판은 중단으로 보고 패로 남긴다 (한 수라도 둔 판만, 사람끼리 대국은 제외)
     if (game && humanMoves > 0 && !game.result) recordAbandon();
     aiToken++;
@@ -2544,6 +2568,15 @@
   async function askHint() {
     if (anim || thinking || hintBusy || guardBusy || game.result) return;
     if (!vsHuman && game.turn !== humanSide) return;
+    // 페어플레이: 대국당 3회, 사용 간격 1분
+    if (hintUsed >= HINT_MAX) {
+      flashTip('힌트는 대국당 최대 3번까지 사용할 수 있습니다.');
+      return;
+    }
+    if (hintWaitSec() > 0) {
+      flashTip('힌트는 다음 수까지 ' + hintWaitSec() + '초 후에 다시 쓸 수 있습니다.');
+      return;
+    }
     hintBusy = true;
     hintMove = null;
     const fen = JanggiFS.boardToFen(game.board, game.turn);   // 어느 국면에 대한 힌트인지 기억해 둔다
@@ -2559,12 +2592,19 @@
     if (!mv) mv = JanggiAI.chooseMove(game.board, game.turn, 3);
     if (!mv) { flashTip('힌트를 찾지 못했습니다.'); updateStatus(); refresh(); return; }
     hintMove = mv;
-    if (!mv) { flashTip('힌트를 찾지 못했습니다.'); updateStatus(); refresh(); return; }
-    hintMove = mv;
+    hintUsed++;
+    hintNextAt = Date.now() + HINT_COOLDOWN_MS;
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(function () {
+      hintTimer = 0;
+      flashTip('힌트를 다시 사용할 수 있습니다.');
+      updateStatus();
+    }, HINT_COOLDOWN_MS);
     playSound('hint');
     const table = lang === 'hangul' ? J.HANGUL : J.HANJA;
     const pc = game.board[mv.fr][mv.fc];
-    flashTip('힌트: ' + (pc ? (table[pc.side][pc.type] || '') + ' ' : '') +
+    flashTip('힌트 ' + hintUsed + '/' + HINT_MAX + ': ' +
+             (pc ? (table[pc.side][pc.type] || '') + ' ' : '') +
              posText(mv.fr, mv.fc) + ' → ' + posText(mv.tr, mv.tc), 6000);
     updateStatus();
     refresh();
@@ -2785,7 +2825,7 @@
   const REVIEW_MS = 350;        // 국면 하나를 살펴보는 시간
   const REVIEW_MISS = 100;      // '아쉬움'으로 볼 손해 (약 1점)
   const REVIEW_BIG = 400;       // '큰 실수'로 볼 손해 (약 4점, 마·포·차급)
-  const MV_NOTE = '좌표는 초(楚) 기준 · 수를 누르면 그 장면을 봅니다';
+  const MV_NOTE = '좌표는 초(楚) 기준 · 수를 누르면 그 장면을 봅니다 · 평가는 대국 후 복기에서';
   let review = null;            // { rows: [{ v, loss, flag, better }] } | null, flag: null|'miss'|'big'
   let reviewToken = 0;          // 새 게임·무르기로 돌던 복기를 무효화할 때 늘린다
   let reviewBusy = false;
@@ -2880,6 +2920,12 @@
   }
   // 지금 국면을 엔진에게 물어 본다 (기보 창이 열려 있을 때만 부른다)
   async function refreshEngineEval() {
+    // 페어플레이: 진행 중인 대국에서는 엔진 평가·추천 수를 보여 주지 않는다.
+    // 대국이 끝나고 '복기'를 마친 뒤에만 기보 창에서 확인할 수 있다.
+    if (!game.result || !review) {
+      clearEngineEval();
+      return;
+    }
     // 기보 창이 닫혀 있으면 평가할 필요가 없다.
     // (닫아 둔 채로 매 수마다 탐색하면 엔진이 AI 응답을 늦춘다)
     if (!engine || engineState !== 'ready' || movesBoxEl.hidden) {
@@ -2956,6 +3002,7 @@
       if (token !== reviewToken) return;
       review = { rows: rows };
       renderMoves();
+      refreshEngineEval();   // 복기가 끝난 뒤에만 현재 국면 평가를 보여 준다
     } catch (e) {
       if (token === reviewToken) mvNoteEl.textContent = '복기를 마치지 못했습니다 (엔진 오류)';
     } finally {

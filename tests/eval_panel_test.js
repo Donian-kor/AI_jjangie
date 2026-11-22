@@ -36,7 +36,8 @@ function makeCtx(over) {
     J,
     JanggiFS: FS,
     lang: 'hanja',
-    game: { board: J.initialBoard(), turn: J.CHO },
+    game: { board: J.initialBoard(), turn: J.CHO, result: { winner: 'C' } },
+    review: { rows: [] },   // 페어플레이: 대국 종료 후 '복기'를 마친 상태가 기본
     vsHuman: false,
     humanSide: J.CHO,
     thinking: false,
@@ -242,6 +243,25 @@ async function testAsync(name, fn) {
     assert.strictEqual(ctx.engineEvalEl.hidden, false);
     assert.ok(/초 쪽 \+2\.2점 \(유리\)/.test(ctx.engineEvalEl.innerHTML), ctx.engineEvalEl.innerHTML);
     assert.ok(/추천 수: /.test(ctx.engineEvalEl.innerHTML), ctx.engineEvalEl.innerHTML);
+  });
+
+  await testAsync('새로고침: 대국 중에는 평가를 숨긴다', async () => {
+    const ctx = makeCtx({
+      game: { board: J.initialBoard(), turn: J.CHO, result: null },
+      review: null,
+    });
+    ctx.engine = fakeEngine([{ cp: 220, mate: null, uci: 'a1e4' }]);
+    await ctx.refreshEngineEval();
+    assert.strictEqual(ctx.engine.calls.length, 0, '대국 중에 엔진을 부름');
+    assert.strictEqual(ctx.engineEvalEl.hidden, true);
+  });
+
+  await testAsync('새로고침: 끝난 판도 복기 전에는 평가를 숨긴다', async () => {
+    const ctx = makeCtx({ review: null });
+    ctx.engine = fakeEngine([{ cp: 220, mate: null, uci: 'a1e4' }]);
+    await ctx.refreshEngineEval();
+    assert.strictEqual(ctx.engine.calls.length, 0, '복기 전에 엔진을 부름');
+    assert.strictEqual(ctx.engineEvalEl.hidden, true);
   });
 
   await testAsync('새로고침: AI 차례에는 평가하지 않는다', async () => {
