@@ -892,8 +892,8 @@
 </footer>
 
 <!-- 규칙·AI 를 고치면 아래 ?v= 숫자를 올려야 한다. 안 올리면 브라우저가 옛 파일을 그대로 쓴다 -->
-<script src="janggi.js?v=7"></script>
-<script src="fs-engine.js?v=5"></script>
+<script src="janggi.js?v=8"></script>
+<script src="fs-engine.js?v=6"></script>
 <script src="ai.js?v=4"></script>
 <script src="assets/pieces-kakao.js?v=1"></script>
 <script>
@@ -1739,6 +1739,7 @@
         mv = await engineMove();
         if (token !== aiToken) return;   // 새 게임·무르기 등으로 무효화된 경우
         if (!mv) mv = JanggiAI.chooseMove(game.board, game.turn, level);
+        if (mv) mv = avoidRepeat(mv);   // 내장 AI 폴백에서도 반복 무승부를 피한다
       } finally {
         // 계산이 어떻게 끝나든 '생각 중'에 갇히지 않게 한다
         if (token === aiToken) thinking = false;
@@ -1752,6 +1753,37 @@
     }, 60);
   }
 
+  // 엔진에 수순을 알려 주기 위한 시작 국면 + UCI 수 목록.
+  // 복원한 수순이 현재 판과 다르면(이상한 저장본 등) 보내지 않고 기존 방식으로 되돌린다.
+  function enginePosition() {
+    const hist = game.history || [];
+    if (!hist.length || !hist[0].board) return null;
+    const moves = JanggiFS.movesFromHistory(hist, game.board);
+    if (!moves.length) return null;
+    let b = J.cloneBoard(hist[0].board);
+    let turn = hist[0].turn;
+    for (const uci of moves) {
+      const m = JanggiFS.uciToMove(uci);
+      if (!m) return null;
+      b = J.applyMove(b, m);
+      turn = J.other(turn);
+    }
+    if (J.positionKey(b, turn) !== J.positionKey(game.board, game.turn)) return null;
+    return { fen: JanggiFS.boardToFen(hist[0].board, hist[0].turn), moves: moves };
+  }
+  // 이 수를 두면 같은 국면이 몇 번이 되는지 (2면 여기서 두면 3번 = 무승부)
+  function repeatCountAfter(mv) {
+    const key = J.positionKey(J.applyMove(game.board, mv), J.other(game.turn));
+    let n = 0;
+    for (const k of game.repeats) if (k === key) n++;
+    return n;
+  }
+  function avoidRepeat(mv) {
+    if (!mv || repeatCountAfter(mv) < 2) return mv;
+    const alt = game.moves().find((m) => repeatCountAfter(m) < 2);
+    return alt || mv;              // 모든 수가 반복이면 어차피 피할 수 없다
+  }
+
   // 엔진 후보 중 우리 규칙에 맞는 첫 수를 고른다.
   // 엔진 규칙은 '빅장 진입 허용 · 패스 허용'이라 우리가 거절하는 수가 섞일 수 있다.
   async function engineMove(lv) {
@@ -1759,7 +1791,7 @@
     try {
       const fen = JanggiFS.boardToFen(game.board, game.turn);
       const useLevel = (lv === undefined || lv === null) ? level : lv;
-      const cands = await engine.bestMove(fen, useLevel);
+      const cands = await engine.bestMove(fen, useLevel, enginePosition());
       if (!cands || !cands.length) return null;
       const legal = game.moves();
       const usable = [];
@@ -1772,9 +1804,12 @@
         }
       }
       if (!usable.length) return null;
+      // 같은 국면을 세 번 만들어 무승부가 되는 수는 다른 후보가 있으면 피한다
+      const fresh = usable.filter((m) => repeatCountAfter(m) < 2);
+      const pool = fresh.length ? fresh : usable;
       // 애기(0): 엔진 후보 여러 개 중 무작위로 골라 실수를 자주 한다
-      if (useLevel === 0) return usable[(Math.random() * usable.length) | 0];
-      return usable[0];
+      if (useLevel === 0) return pool[(Math.random() * pool.length) | 0];
+      return pool[0];
     } catch (e) {
       return null;
     }

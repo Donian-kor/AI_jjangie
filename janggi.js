@@ -443,7 +443,7 @@
   const api = {
     ROWS, COLS, CHO, HAN, HANJA, HANGUL, LAYOUTS,
     other, inside, inPalace, initialBoard, cloneBoard, findGeneral,
-    applyMove, isCheck, generalsFace, legalMoves, Game,
+    applyMove, isCheck, generalsFace, legalMoves, positionKey, Game,
     gameFromData,
   };
 

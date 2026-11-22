@@ -75,6 +75,36 @@
     return { fr, fc: FILES.indexOf(m[1]), tr, tc: FILES.indexOf(m[3]) };
   }
 
+  // history[i].board = 수를 두기 직전 판. 마지막 구간은 현재 판까지로 본다.
+  // 두 판을 비교해 실제로 둔 수를 UCI 로 되살린다 (엔진에 수순을 알려 주려고).
+  // 복원할 수 없으면 빈 배열 → 호출 쪽은 기존처럼 현재 FEN 만 보낸다.
+  function movesFromHistory(history, currentBoard) {
+    if (!Array.isArray(history) || !history.length) return [];
+    const out = [];
+    for (let i = 0; i < history.length; i++) {
+      const h = history[i];
+      const before = h && h.board;
+      const next = history[i + 1];
+      const after = (next && next.board) ? next.board : currentBoard;
+      const side = h && h.turn;
+      if (!Array.isArray(before) || !Array.isArray(after)) return [];
+      if (side !== Janggi.CHO && side !== Janggi.HAN) return [];
+      let src = null, dst = null;
+      for (let r = 0; r < Janggi.ROWS; r++) {
+        for (let c = 0; c < Janggi.COLS; c++) {
+          const b = before[r][c], a = after[r][c];
+          // 출발: 내 말이 있던 자리가 비었다
+          if (!src && b && b.side === side && !a) src = { r, c };
+          // 도착: 내 말이 새로 놓였다 (빈 칸이거나 적 말을 잡은 경우)
+          if (!dst && a && a.side === side && (!b || b.side !== side)) dst = { r, c };
+        }
+      }
+      if (!src || !dst) return [];
+      out.push(moveToUci({ fr: src.r, fc: src.c, tr: dst.r, tc: dst.c }));
+    }
+    return out;
+  }
+
   // ---- 난이도 설정 -----------------------------------------------------
   // 0 = 애기, 1 = 초보, 2 = 중급, 3 = 고수, 4 = 최강
   // Skill Level 로 실력을 제한하고, movetime 으로 탐색 시간을 정한다.
@@ -205,7 +235,8 @@
 
     // bestMove → ['b1c3', 'e3e5', ...]
     //   [0]은 엔진이 실제로 두려던 수(난이도 조절 결과), 나머지는 예비 후보.
-    function bestMove(fen, level) {
+    // position 이 { fen, moves } 이면 시작 국면 + 수순을 보내 엔진이 반복을 인지하게 한다.
+    function bestMove(fen, level, position) {
       const cfg = LEVELS[level] || LEVELS[2];
       return enqueue(async () => {
         await handshake();
@@ -213,7 +244,12 @@
         const pv = {};                       // multipv 번호 → 최선 수
         send('setoption name MultiPV value ' + MULTI_PV);
         send('setoption name Skill Level value ' + cfg.skill);
-        send('position fen ' + fen);
+        if (position && position.fen && Array.isArray(position.moves) && position.moves.length) {
+          // 같은 국면이 몇 번 나왔는지 엔진이 알게 해야 의미 없는 반복수를 두지 않는다
+          send('position fen ' + position.fen + ' moves ' + position.moves.join(' '));
+        } else {
+          send('position fen ' + fen);
+        }
         searching = true;
         send('go movetime ' + cfg.movetime);
         const line = await expectingBestmove(cfg.movetime + SEARCH_EXTRA_MS, pv);
@@ -420,7 +456,7 @@
   }
 
   const api = {
-    boardToFen, fenToBoard, moveToUci, uciToMove,
+    boardToFen, fenToBoard, moveToUci, uciToMove, movesFromHistory,
     createEngine,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

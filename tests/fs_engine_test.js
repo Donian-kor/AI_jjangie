@@ -88,6 +88,25 @@ const STARTPOS = 'rnba1abnr/4k4/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4K4/RNBA1ABN
     assert.strictEqual(FS.uciToMove('bad!'), null);
   });
 
+  test('수순 복원: history 로 만든 UCI 목록이 현재 국면과 일치', () => {
+    const g = new J.Game();
+    for (let i = 0; i < 6 && !g.result; i++) {
+      const ms = g.moves();
+      g.play(ms[i % ms.length]);
+    }
+    const ucis = FS.movesFromHistory(g.history, g.board);
+    assert.strictEqual(ucis.length, g.history.length);
+    let b = J.cloneBoard(g.history[0].board);
+    let turn = g.history[0].turn;
+    for (const u of ucis) {
+      const mv = FS.uciToMove(u);
+      assert.ok(mv, 'UCI 복원 실패: ' + u);
+      b = J.applyMove(b, mv);
+      turn = J.other(turn);
+    }
+    assert.strictEqual(J.positionKey(b, turn), J.positionKey(g.board, g.turn));
+  });
+
   const engine = await FS.createEngine();
   const uciLines = [];
   engine.addListener((l) => uciLines.push(l));
@@ -125,6 +144,20 @@ const STARTPOS = 'rnba1abnr/4k4/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4K4/RNBA1ABN
     const cands = await engine.bestMove(FS.boardToFen(J.initialBoard(), J.CHO), 3);
     assert.ok(Array.isArray(cands) && cands.length > 0, '후보 수 없음');
     for (const c of cands) assert.ok(/^[a-i][0-9]{1,2}[a-i][0-9]{1,2}$/.test(c), '수 형식 이상: ' + c);
+  });
+
+  await testAsync('엔진: 시작 국면+수순을 준 bestMove 도 후보를 반환', async () => {
+    const g = new J.Game();
+    for (let i = 0; i < 4 && !g.result; i++) {
+      const ms = g.moves();
+      g.play(ms[i % ms.length]);
+    }
+    const pos = {
+      fen: FS.boardToFen(g.history[0].board, g.history[0].turn),
+      moves: FS.movesFromHistory(g.history, g.board),
+    };
+    const cands = await engine.bestMove(FS.boardToFen(g.board, g.turn), 1, pos);
+    assert.ok(Array.isArray(cands) && cands.length > 0, '수순 정보 준 bestMove 후보 없음');
   });
 
   await testAsync('엔진: 애기(레벨 0)도 후보 수를 반환', async () => {
