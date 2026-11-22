@@ -32,10 +32,10 @@
     text-align: center;
   }
   /* PC 에서는 설정만 장기판 왼쪽 기둥에 두고, 상태·안내는 판 위에 한 줄로 둔다.
-     모바일에서는 예전처럼 헤더 아래에 그대로 이어진다. */
-  #mainRow { width: 100%; }
+     모바일에서는 예전처럼 헤더 아래에 설정 → 상태 → 안내 → 판 순서로 이어진다. */
+  #mainRow { width: 100%; display: flex; flex-direction: column; }
   #boardArea { width: 100%; min-width: 0; }
-  #leftUi { width: 100%; max-width: 636px; padding: 0 8px; }
+  #leftUi { width: 100%; max-width: 636px; padding: 0 8px; order: -1; }
   h1 {
     margin: 0 0 8px;
     font-size: 22px;
@@ -158,7 +158,6 @@
   }
   /* 장군: 빨간 배경판 + 깜빡임 (눈에 확 띄게) */
   #status.check {
-    display: inline-block;
     padding: 7px 20px;
     border-radius: 9px;
     background: #d32f2f;
@@ -174,7 +173,6 @@
   }
   /* 멍군·승패: 크게 */
   #status.result {
-    display: inline-block;
     padding: 9px 24px;
     border-radius: 10px;
     font-size: 22px;
@@ -568,11 +566,19 @@
   .engineEval.plus { color: #1e7a4a; }
   .engineEval.minus { color: #b3512a; }
   .engineEval[hidden] { display: none; }
-  /* ---- PC 전용 배치: 제목은 상단에 그대로, 설정·상태·안내는 판 왼쪽 세로 기둥 ---- */
+  /* ---- PC 전용 배치: 제목 상단, 상태·안내는 판 위 한 줄, 설정은 판 왼쪽 기둥 ---- */
   @media (min-width: 761px) {
-    #mainRow { display: flex; align-items: stretch; }
+    #mainRow {
+      display: grid;
+      grid-template-columns: 195px minmax(0, 1fr);
+      grid-template-rows: auto auto 1fr;
+      align-items: stretch;
+    }
+    #status { grid-column: 2; grid-row: 1; }
+    #tip    { grid-column: 2; grid-row: 2; }
     #leftUi {
-      flex: 0 0 195px;
+      grid-column: 1;
+      grid-row: 3;            /* 판과 같은 행에서 시작해 상단 높이가 맞는다 */
       max-width: none;
       min-width: 0;
       overflow-y: auto;
@@ -593,7 +599,9 @@
     #leftUi .panel button { padding: 7px; min-height: 42px; font-size: 14px; }
     #leftUi .panel button.mini, #leftUi #zoomVal { padding: 5px 6px; min-height: 0; font-size: 13px; }
     #leftUi #zoomVal { min-width: 42px; }
-    #boardArea { flex: 1 1 auto; min-width: 0; }
+    #boardArea { grid-column: 2; grid-row: 3; min-width: 0; }
+    /* 차례 안내는 제목처럼 화면 전체 중앙에: 왼쪽 기둥(195px)만큼 밀린 중앙선을 되돌린다 */
+    #status { position: relative; left: calc(195px / -2); }
     /* 판을 가운데에 두려 넣었던 왼쪽 빈칸은 이제 왼쪽 기둥이 대신한다 */
     #boardBal { display: none; }
     /* 전적 하단 버튼: 좁은 기둥에서 글자가 세로로 쪼개지지 않게 한 줄에 하나씩 */
@@ -606,6 +614,8 @@
   <h1>장기AI가 힘을 숨기지 않음 <span class="ver">beta v0.2</span></h1>
 </header>
 <div id="mainRow">
+<div id="status" aria-live="polite"></div>
+<div id="tip" class="tip"></div>
 <aside id="leftUi">
   <div class="panel">
     <div class="prow">
@@ -676,8 +686,6 @@
 </aside>
 <div id="pieceTip" hidden></div>
 <div id="boardArea">
-<div id="status" aria-live="polite"></div>
-<div id="tip" class="tip"></div>
 <div id="playArea">
   <div id="boardBal"></div>
   <div id="boardWrap"><canvas id="board" role="img" aria-label="장기판"></canvas></div>
