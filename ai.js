@@ -91,10 +91,17 @@
     return { move: best, aborted: ctx.abort, nodes: ctx.nodes };
   }
 
-  // level: 1 = 초보, 2 = 중급, 3 = 고수, 4 = 최강
+  // level: 0 = 애기, 1 = 초보, 2 = 중급, 3 = 고수, 4 = 최강
   function chooseMove(board, side, level) {
     const moves = Janggi.legalMoves(board, side);
     if (moves.length === 0) return null;
+
+    if (level <= 0) {
+      // 애기: 절반 이상은 완전 무작위, 나머지도 잡기 위주 상위 후보에서 무작위
+      if (Math.random() < 0.6) return moves[(Math.random() * moves.length) | 0];
+      const pool = orderMoves(board, moves).slice(0, 8);
+      return pool[(Math.random() * pool.length) | 0];
+    }
 
     if (level <= 1) {
       // 초보: 35% 확률로 아무 수나, 나머지는 한 수 미리 본 점수 상위 6개 중에서 고른다

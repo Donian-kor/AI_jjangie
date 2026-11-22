@@ -634,6 +634,7 @@
       </label>
       <label class="fld"><span>난이도</span>
         <select id="levelSel">
+          <option value="0">애기</option>
           <option value="1">초보</option>
           <option value="2">중급</option>
           <option value="3">고수</option>
@@ -892,8 +893,8 @@
 
 <!-- 규칙·AI 를 고치면 아래 ?v= 숫자를 올려야 한다. 안 올리면 브라우저가 옛 파일을 그대로 쓴다 -->
 <script src="janggi.js?v=7"></script>
-<script src="fs-engine.js?v=4"></script>
-<script src="ai.js?v=3"></script>
+<script src="fs-engine.js?v=5"></script>
+<script src="ai.js?v=4"></script>
 <script src="assets/pieces-kakao.js?v=1"></script>
 <script>
 (function () {
@@ -1757,18 +1758,23 @@
     if (!engine) return null;
     try {
       const fen = JanggiFS.boardToFen(game.board, game.turn);
-      const cands = await engine.bestMove(fen, lv || level);
+      const useLevel = (lv === undefined || lv === null) ? level : lv;
+      const cands = await engine.bestMove(fen, useLevel);
       if (!cands || !cands.length) return null;
       const legal = game.moves();
+      const usable = [];
       for (const uci of cands) {
         const mv = JanggiFS.uciToMove(uci);
         if (!mv) continue;
         if (mv.fr === mv.tr && mv.fc === mv.tc) continue;   // 패스는 지원하지 않음
         if (legal.some((m) => m.fr === mv.fr && m.fc === mv.fc && m.tr === mv.tr && m.tc === mv.tc)) {
-          return mv;
+          usable.push(mv);
         }
       }
-      return null;
+      if (!usable.length) return null;
+      // 애기(0): 엔진 후보 여러 개 중 무작위로 골라 실수를 자주 한다
+      if (useLevel === 0) return usable[(Math.random() * usable.length) | 0];
+      return usable[0];
     } catch (e) {
       return null;
     }
@@ -2437,7 +2443,7 @@
       return {
         side: d.side === 'H' ? 'H' : 'C',
         vs: d.vs === 'human' ? 'human' : 'ai',
-        level: Math.min(4, Math.max(1, parseInt(d.level, 10) || 1)),
+        level: Math.min(4, Math.max(0, parseInt(d.level, 10) || 0)),
         layout: String(d.layout || ''),
         ch: Math.min(4, Math.max(0, parseInt(d.ch, 10) || 0)),
         humanMoves: d.humanMoves | 0,

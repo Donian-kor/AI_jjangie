@@ -127,6 +127,12 @@ const STARTPOS = 'rnba1abnr/4k4/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4K4/RNBA1ABN
     for (const c of cands) assert.ok(/^[a-i][0-9]{1,2}[a-i][0-9]{1,2}$/.test(c), '수 형식 이상: ' + c);
   });
 
+  await testAsync('엔진: 애기(레벨 0)도 후보 수를 반환', async () => {
+    const cands = await engine.bestMove(FS.boardToFen(J.initialBoard(), J.CHO), 0);
+    assert.ok(Array.isArray(cands) && cands.length > 0, '애기 후보 수 없음');
+    for (const c of cands) assert.ok(/^[a-i][0-9]{1,2}[a-i][0-9]{1,2}$/.test(c), '수 형식 이상: ' + c);
+  });
+
   await testAsync('규칙 정합: 엔진 후보 중 우리 규칙상 합법인 수가 반드시 있음', async () => {
     const g = new J.Game();
     let played = 0;
