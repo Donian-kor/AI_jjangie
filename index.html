@@ -31,12 +31,11 @@
     padding: 12px 8px 4px;
     text-align: center;
   }
-  /* PC 에서는 설정·상태·안내를 장기판 왼쪽 기둥으로 세로로 쌓는다.
+  /* PC 에서는 설정만 장기판 왼쪽 기둥에 두고, 상태·안내는 판 위에 한 줄로 둔다.
      모바일에서는 예전처럼 헤더 아래에 그대로 이어진다. */
   #mainRow { width: 100%; }
+  #boardArea { width: 100%; min-width: 0; }
   #leftUi { width: 100%; max-width: 636px; padding: 0 8px; }
-  #leftUi #status { margin: 10px 0 6px; }
-  #leftUi .tip { margin: 0 0 4px; }
   h1 {
     margin: 0 0 8px;
     font-size: 22px;
@@ -123,21 +122,40 @@
   .locknote.on { display: block; }
   .locknote b { color: #6b4a2b; }
   #status {
-    margin: 10px 8px 6px;
-    min-height: 24px;
-    font-size: 15px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 10px auto 6px;
+    min-height: 28px;
+    font-size: 18px;
+    line-height: 1.45;
     font-weight: bold;
     text-align: center;
+    /* 한글도 음절 단위로 쪼개지지 않고 단어(공백) 단위로만 줄바꿈 */
+    word-break: keep-all;
+    overflow-wrap: normal;
   }
+  #status .statNowrap { white-space: nowrap; }
   #status .cho { color: var(--cho); }
   #status .han { color: var(--han); }
   #status .hint {
     margin-top: 6px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: normal;
     color: #8d7a5c;
   }
   #status .hint.danger { color: #c62828; font-weight: bold; }
+  /* 내 차례: 안내 줄이 1초 주기로 부드럽게 깜빡인다 */
+  #status.myturn {
+    padding: 4px 12px;
+    border-radius: 10px;
+    background: #fff3d4;
+    box-shadow: 0 0 0 2px rgba(210,160,60,.35) inset;
+    animation: turnBlink 1s ease-in-out infinite;
+  }
+  @keyframes turnBlink {
+    0%, 100% { background: #fff3d4; box-shadow: 0 0 0 2px rgba(210,160,60,.35) inset; opacity: 1;   transform: scale(1); }
+    50%      { background: #ffd979; box-shadow: 0 0 0 4px rgba(210,160,60,.6) inset;  opacity: .45; transform: scale(1.02); }
+  }
   /* 장군: 빨간 배경판 + 깜빡임 (눈에 확 띄게) */
   #status.check {
     display: inline-block;
@@ -438,19 +456,45 @@
   .mvBadge.big { color: #a5352c; background: #fbe9e4; border: 1px solid #efc7bb; }
   .mvBetter { padding: 0 0 4px 60px; font-size: 11px; color: #4a7a35; }
   /* ---- 도움말 창 ---- */
-  #helpBox .hpCard { width: 470px; padding: 16px 20px 12px; }
-  #hpBody { max-height: 60vh; overflow-y: auto; padding-right: 4px; }
+  #helpBox .hpCard { width: 640px; padding: 18px 22px 14px; }
+  #hpBody { max-height: 66vh; overflow-y: auto; padding-right: 8px; counter-reset: hpsec; }
+  /* 섹션마다 번호 딱지가 붙은 헤더 + 본문 카드로 묶어 한눈에 구분되게 */
   #hpBody h3 {
-    margin: 13px 0 5px;
-    padding-bottom: 3px;
-    border-bottom: 1px solid #ecdfc2;
-    font-size: 12px;
+    margin: 14px 0 0;
+    padding: 8px 12px;
+    border: 1px solid #e5d3a8;
+    border-left: 4px solid #8d6e3a;
+    border-radius: 8px 8px 0 0;
+    background: #f6ecd3;
+    font-size: 15px;
     letter-spacing: 1px;
-    color: #8d6e3a;
+    color: #6b4a2b;
   }
   #hpBody h3:first-child { margin-top: 0; }
-  #hpBody ul { margin: 0; padding-left: 16px; }
-  #hpBody li { margin: 3px 0; font-size: 12.5px; line-height: 1.55; color: #4a3a25; }
+  #hpBody h3::before {
+    counter-increment: hpsec;
+    content: counter(hpsec);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 21px;
+    height: 21px;
+    margin-right: 9px;
+    border-radius: 50%;
+    background: #8d6e3a;
+    color: #fffaf0;
+    font-size: 12px;
+    letter-spacing: 0;
+  }
+  #hpBody ul {
+    margin: 0 0 4px;
+    padding: 10px 14px 10px 32px;
+    border: 1px solid #e5d3a8;
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
+    background: #fffdf7;
+  }
+  #hpBody li { margin: 5px 0; font-size: 13.5px; line-height: 1.55; color: #4a3a25; }
   #hpBody em { font-style: normal; font-weight: bold; color: #8d6e3a; }
   #hpBody .hpKey { display: inline-block; min-width: 58px; font-weight: bold; color: #33291c; }
   #helpBox .hpFoot { margin-top: 8px; font-size: 11px; color: #a89372; text-align: center; }
@@ -471,11 +515,11 @@
     .prow + .prow { margin-top: 4px; padding-top: 4px; }
     .fld > span { font-size: 10px; }
     select, button { font-size: 11px; }
-    #status { font-size: 13px; }
+    #status { font-size: 16px; }
   }
   /* '움직임 줄이기'를 켠 분에게는 깜빡임·번쩍임 장식을 쓰지 않는다 */
   @media (prefers-reduced-motion: reduce) {
-    #status.check, canvas.flash,
+    #status.check, #status.myturn, canvas.flash,
     #resultBox .resCard, #movesBox .mvCard, #helpBox .hpCard,
     #resumeBox .resCard, #guardBox .resCard { animation: none; }
   }
@@ -534,25 +578,22 @@
       overflow-y: auto;
       padding: 6px 6px 16px;
       background: var(--bg);
-      border-right: 1px solid #e0d0ac;
     }
     #leftUi .panel { padding: 6px; }
-    #leftUi .prow { flex-direction: column; align-items: stretch; gap: 5px; }
+    #leftUi .prow { flex-direction: column; align-items: stretch; gap: 6px; }
     #leftUi .ptag { align-self: flex-start; }
+    /* 라벨·드롭다운 각각 같은 폭으로 고정해 세로 열이 가지런히 맞게 */
     #leftUi .fld { justify-content: space-between; gap: 4px; }
-    #leftUi .fld > span { white-space: nowrap; font-size: 11px; }
-    #leftUi .panel select { flex: 1 1 auto; min-width: 0; padding: 5px 4px; font-size: 12.5px; }
+    #leftUi .fld > span { flex: 0 0 44px; width: 44px; white-space: nowrap; font-size: 12px; }
+    #leftUi .panel select { flex: 0 0 122px; width: 122px; min-width: 0; padding: 6px 5px; font-size: 13.5px; }
     #leftUi .spacer { display: none; }
-    #leftUi .chk { gap: 3px; white-space: nowrap; }
-    #leftUi .chk > span { font-size: 10.5px; }
-    #leftUi .chk input { width: 13px; height: 13px; }
-    #leftUi .panel button { padding: 6px; min-height: 40px; font-size: 13px; }
-    #leftUi .panel button.mini, #leftUi #zoomVal { padding: 4px 6px; min-height: 0; font-size: 12px; }
-    #leftUi #zoomVal { min-width: 40px; }
-    #leftUi #status { margin: 10px 2px 6px; font-size: 12px; }
-    #leftUi #status .hint { font-size: 10px; }
-    #leftUi .tip { margin: 0 2px 4px; text-align: left; font-size: 11px; }
-    #playArea { flex: 1 1 auto; width: auto; min-width: 0; }
+    #leftUi .chk { gap: 4px; white-space: nowrap; }
+    #leftUi .chk > span { font-size: 12px; }
+    #leftUi .chk input { width: 14px; height: 14px; }
+    #leftUi .panel button { padding: 7px; min-height: 42px; font-size: 14px; }
+    #leftUi .panel button.mini, #leftUi #zoomVal { padding: 5px 6px; min-height: 0; font-size: 13px; }
+    #leftUi #zoomVal { min-width: 42px; }
+    #boardArea { flex: 1 1 auto; min-width: 0; }
     /* 판을 가운데에 두려 넣었던 왼쪽 빈칸은 이제 왼쪽 기둥이 대신한다 */
     #boardBal { display: none; }
     /* 전적 하단 버튼: 좁은 기둥에서 글자가 세로로 쪼개지지 않게 한 줄에 하나씩 */
@@ -632,10 +673,11 @@
     </div>
     <div class="locknote" id="lockNote">대국 중에는 진영·상대·난이도·차림을 바꿀 수 없습니다. 바꾸려면 <b>새 게임</b>을 누르세요.</div>
   </div>
-  <div id="status" aria-live="polite"></div>
-  <div id="tip" class="tip"></div>
 </aside>
 <div id="pieceTip" hidden></div>
+<div id="boardArea">
+<div id="status" aria-live="polite"></div>
+<div id="tip" class="tip"></div>
 <div id="playArea">
   <div id="boardBal"></div>
   <div id="boardWrap"><canvas id="board" role="img" aria-label="장기판"></canvas></div>
@@ -679,6 +721,7 @@
       <input type="file" id="recImportFile" accept=".json,application/json" hidden>
     </div>
   </div>
+</div>
 </div>
 </div>
 
@@ -856,6 +899,8 @@
   let hintMove = null;          // 힌트(추천 수) — 점선 원으로 보여 준다
   let hintBusy = false;         // 힌트를 찾는 중
   let aiToken = 0;              // 오래된 AI 계산 무효화용
+  let turnCueEpoch = 0;         // 새 게임·이어하기 때 내 차례 강조를 다시 띄우기 위한 값
+  let lastTurnCueKey = null;    // 마지막으로 강조를 띄운 차례 상태
   let resumeOn = true;          // '이어하기'(자동 저장) 켜짐 여부 — 설정에서 바꾼다
   let guardOn = false;          // '실수 확인': 크게 손해 보는 수를 두기 전에 한 번 묻는다 (기본 꺼짐)
   let challenge = false;        // '연승 도전': 이기면 난이도가 올라간다
@@ -1100,8 +1145,8 @@
     // (여백을 40px 로 어림잡던 예전 계산은 캔버스를 판 밖으로 18px 삐져나오게 했다)
     // 전적·단추는 PC 에서 항상 판 오른쪽에 둔다. 판이 쓸 수 있는 폭은 playArea 폭에서
     // 오른쪽 전적·단추 자리(168)와 사이 여백(36), #boardWrap 좌우 여백(16)을 뺀 만큼이다.
-    // 설정·상태·안내는 왼쪽 기둥(#leftUi, 195px)으로 빠졌고 가운데 맞춤용 boardBal 도 숨기므로
-    // 계산은 그대로 맞아떨어진다.
+    // 설정은 왼쪽 기둥(#leftUi, 195px)으로 빠졌고 가운데 맞춤용 boardBal 도 숨기므로
+    // 계산은 그대로 맞아떨어진다. (상태·안내는 판 위에서 세로 공간을 차지한다)
     // (좁은 화면은 전적이 판 아래로 가므로 paW 를 그대로 쓴다.
     //  좁은 화면은 세로 스크롤로 보면 되므로 높이 제한을 풀고 폭에 꽉 맞춘다.
     //  그렇지 않으면 높이 때문에 판이 작아져 좌우에 빈 공간이 남는다)
@@ -1508,6 +1553,18 @@
     }
     return won ? '상대 장군을 잡았습니다' : '내 장군을 잡혔습니다';
   }
+  // 내 차례가 되었을 때 안내 줄을 짧게 강조한다.
+  // 같은 차례 상태로 updateStatus() 가 여러 번 불려도 애니메이션이 되반복되지 않게 key 로 막는다.
+  function setTurnCue(active, key) {
+    if (active && key !== lastTurnCueKey) {
+      statusEl.classList.remove('myturn');
+      void statusEl.offsetWidth;   // reflow — 클래스를 다시 붙여 애니메이션을 처음부터 재생
+      statusEl.classList.add('myturn');
+    } else if (!active) {
+      statusEl.classList.remove('myturn');
+    }
+    lastTurnCueKey = key;
+  }
   function updateStatus() {
     if (viewState) return;     // 기보를 되짚어 보는 중에는 안내 줄을 그대로 둔다
     undoBtn.disabled = game.history.length === 0 || thinking || guardBusy || !!anim;
@@ -1522,6 +1579,7 @@
       const how = resultHowText();
       // 사람끼리 대국에서는 이긴 쪽을 이름으로 알려 준다 (이긴 쪽이 없으면 무승부)
       statusEl.className = 'result' + (draw ? ' draw' : vsHuman || win ? '' : ' lose');
+      setTurnCue(false, 'end');
       statusEl.innerHTML = (draw ? '무승부입니다. '
         : vsHuman ? statusName(game.result.winner) + '가 이겼습니다! '
         : win ? '이겼습니다! ' : '졌습니다. ') +
@@ -1531,11 +1589,13 @@
     statusEl.className = game.check ? 'check' : '';
     if (thinking) {
       statusEl.className = '';
+      setTurnCue(false, 'think');
       statusEl.innerHTML = statusName(J.other(humanSide)) + '이 생각 중… (' +
         (engine ? 'Fairy-Stockfish' : '내장 AI') + ')';
       return;
     }
     if (game.check) {
+      setTurnCue(false, 'check');   // 장군은 빨간 깜빡임이 따로 있으므로 중복 강조하지 않는다
       // 걸린 쪽의 장을 직접 짚어 주어야 한눈에 보인다
       const k = J.findGeneral(game.board, game.turn);
       statusEl.innerHTML = '장군! ' + statusName(game.turn) + '의 장이 걸렸습니다' +
@@ -1545,12 +1605,16 @@
       return;
     }
     if (vsHuman) {
+      setTurnCue(true, '2p|' + game.turn + '|' + turnCueEpoch);
       statusEl.innerHTML = statusName(game.turn) + ' 차례입니다 ' +
         '<span style="font-size:13px;letter-spacing:0;color:#8d7a5c">(사람끼리 대국)</span>';
       return;
     }
-    statusEl.innerHTML = statusName(game.turn) + ' 차례 — ' +
-      (game.turn === humanSide ? '당신 차례입니다' : '기다려 주세요') +
+    setTurnCue(game.turn === humanSide,
+      'my|' + game.turn + '|' + humanSide + '|' + turnCueEpoch);
+    statusEl.innerHTML = '<span class="statNowrap">' + statusName(game.turn) + ' 차례</span> ' +
+      '<span class="statNowrap">' +
+        (game.turn === humanSide ? '당신 차례입니다' : '기다려 주세요') + '</span>' +
       (engineState === 'off'
         ? '<div class="hint">Fairy-Stockfish 엔진을 쓸 수 없어 내장 AI로 두겠습니다.</div>'
         : '') +
@@ -2034,6 +2098,7 @@
     // 진행 중이던 판은 중단으로 보고 패로 남긴다 (한 수라도 둔 판만, 사람끼리 대국은 제외)
     if (game && humanMoves > 0 && !game.result) recordAbandon();
     aiToken++;
+    turnCueEpoch++;              // 새 판에서도 '내 차례' 강조가 다시 재생되게 한다
     thinking = false;
     anim = null;
     humanMoves = 0;
