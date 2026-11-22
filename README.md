@@ -117,10 +117,17 @@ node tests/fs_engine_test.js
 
 ## 라이선스·크레딧
 
-- **말·보드 이미지**: [Kadagaden/chess-pieces](https://github.com/Kadagaden/chess-pieces) (CC-BY-4.0)
+- **말·보드 이미지**: [Kadagaden/chess-pieces](https://github.com/Kadagaden/chess-pieces), 커밋 `b035b0cc`
+  - 라이선스: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — 저작자 표시 필수
   - 라이선스 전문: `assets/LICENSE-chess-pieces.txt`
-  - `index.html` 하단 footer에 저작자 표시 유지 필요
-- **AI 엔진**: Fairy-Stockfish (GPL) — `third_party/fairy-stockfish/`
+  - `pieces-kakao.js`는 원본 SVG의 글자 색만 치환한 수정본이므로 "색상 수정" 사실을 함께 표기
+  - 재배포 시 `index.html` footer의 저작자·라이선스 표시를 유지할 것
+- **AI 엔진**: Fairy-Stockfish — `third_party/fairy-stockfish/`
+  - 원본: [fairy-stockfish.wasm](https://github.com/fairy-stockfish/fairy-stockfish.wasm), 커밋 `b2e693ef1e111233ce3fb40685921708b3276ed6` (npm 1.1.12)
+  - 라이선스: [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html) — 라이선스 전문 `Copying.txt`, 저자 목록 `AUTHORS`
+  - 이 프로젝트의 바이너리는 `SharedArrayBuffer` 없이 동작하도록 단일 스레드로 재빌드한 수정본
+  - 수정 내역은 `third_party/fairy-stockfish/README.md` 4장, 재빌드 스크립트는 `build-fsf-wasm.ps1`에 있음
+  - **웹으로 공개/배포할 때**: GPL-3.0 조건(엔진 소스 제공, 라이선스·저작권 고지 유지, 파생물 동일 라이선스)을 지킬 것. 자체 게임 코드까지 GPL로 공개할 필요는 없음(별개 저작물)
 - **게임 코드**: (프로젝트 소유자)
 
 ## 알려진 한계
