@@ -12,8 +12,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const REPO = process.argv[2] || path.join(process.env.TEMP || '.', 'opencode', 'chess-pieces');
-const SRC = path.join(REPO, 'janggi_kakao_janggi_style_white');
+// 인수가 있으면 chess-pieces 저장소 루트로 보고, 없으면 이 프로젝트에 보관한 소스를 쓴다.
+const SRC = process.argv[2]
+  ? path.join(process.argv[2], 'janggi_kakao_janggi_style_white')
+  : path.join(__dirname, '..', 'assets', 'janggi_kakao_janggi_style_white');
 const OUT = path.join(__dirname, '..', 'assets', 'pieces-kakao.js');
 
 // 저장소 파일명 → 우리 코드 기물 문자
@@ -21,28 +23,36 @@ const PIECES = [
   ['chariot', 'R'], ['horse', 'N'], ['elephant', 'E'],
   ['cannon', 'C'], ['advisor', 'G'], ['king', 'K'], ['pawn', 'P'],
 ];
-// 원본에서 '글자'에 쓰인 색 (fill 과 stroke 에 들어 있다)
-const GLYPH_COLORS = /#e12810|#e1220a/gi;
+// 진영별 원본 파일과 '글자'에 쓰인 색 (fill 과 stroke 에 들어 있다).
+// 파랑 세트는 빨강 세트를 단순히 색만 바꾼 것이 아니라 모양도 다르므로 각각 내장한다.
+const SIDES = {
+  C: { prefix: 'blue_', glyph: /#112d94|#112c92|#112c91/gi },  // 초(파랑)
+  H: { prefix: 'red_', glyph: /#e12810|#e1220a/gi },           // 한(빨강)
+};
 const PLACEHOLDER = '%COLOR%';
 
 const out = {};
 let total = 0;
 for (const [file, type] of PIECES) {
-  const raw = fs.readFileSync(path.join(SRC, 'red_' + file + '.svg'), 'utf8');
-  const hits = (raw.match(GLYPH_COLORS) || []).length;
-  if (!hits) throw new Error('글자 색을 찾지 못함: ' + file);
-  out[type] = raw.replace(GLYPH_COLORS, PLACEHOLDER);
-  total += out[type].length;
-  console.log(file.padEnd(9) + ' → ' + type + '  글자색 ' + hits + '곳 치환  ' +
-              String(raw.length).padStart(5) + ' B');
+  out[type] = {};
+  for (const side of ['C', 'H']) {
+    const cfg = SIDES[side];
+    const raw = fs.readFileSync(path.join(SRC, cfg.prefix + file + '.svg'), 'utf8');
+    const hits = (raw.match(cfg.glyph) || []).length;
+    if (!hits) throw new Error('글자 색을 찾지 못함: ' + cfg.prefix + file);
+    out[type][side] = raw.replace(cfg.glyph, PLACEHOLDER);
+    total += out[type][side].length;
+  }
+  console.log(file.padEnd(9) + ' → ' + type + '  초/한 SVG 각각 내장  ' +
+              String(out[type].C.length + out[type].H.length).padStart(5) + ' B');
 }
 
 const banner = [
   '// 자동 생성 파일 — tools/make-piece-assets.js 로 생성했다. 직접 수정하지 마세요.',
-  '// 출처: https://github.com/Kadagaden/chess-pieces  (CC-BY-4.0, Kadagaden)',
+  '// 출처: assets/janggi_kakao_janggi_style_white/ (원본: Kadagaden/chess-pieces, CC-BY-4.0)',
   '// janggi_kakao_janggi_style_white 세트(카카오 장기 스타일) 원본 SVG.',
-  "// '%COLOR%' 는 글자 색 자리표시자다. 이 문자열을 색으로 바꿔 data: URI 로 만들면",
-  '// 어떤 색으로든 표시할 수 있다. 빨강·파랑 두 벌을 따로 넣지 않는다.',
+  "// '%COLOR%' 는 글자 색 자리표시자다. 이 문자열을 색으로 바꿔 data: URI 로 만든다.",
+  '// 초(C)와 한(H) 원본의 모양이 다르므로 기물별로 두 벌을 함께 내장한다.',
   'window.JANGGI_KAKAO_SVG = ' + JSON.stringify(out, null, 1) + ';',
   '',
 ].join('\n');

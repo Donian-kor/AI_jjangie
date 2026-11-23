@@ -916,7 +916,7 @@
 <script src="janggi.js?v=9"></script>
 <script src="fs-engine.js?v=6"></script>
 <script src="ai.js?v=4"></script>
-<script src="assets/pieces-kakao.js?v=1"></script>
+<script src="assets/pieces-kakao.js?v=3"></script>
 <script>
 (function () {
   'use strict';
@@ -1069,16 +1069,18 @@
     return (im.complete && im.naturalWidth > 0) ? im : null;
   }
 
-  // 카카오 세트는 원본 SVG 를 색만 바꿔 data: URI 로 그린다 → '내 말 색' 이 그대로 통한다
+  // 카카오 세트는 진영별 원본 SVG의 글자 색만 바꿔 data: URI 로 그린다 → '내 말 색' 이 그대로 통한다
   // (file:// 에서는 fetch 가 막혀 SVG 원본을 읽어올 수 없으므로 JS 에 내장해 둔다)
   //
   // 반드시 캐시해야 한다. 매 프레임마다 6KB SVG 를 인코딩하면
   // 장군 표시로 화면이 매 프레임 다시 그려질 때 CPU 를 다 먹고 화면이 멈춘다.
   const kakaoUriCache = {};
-  function kakaoUrl(type, color) {
-    const svg = (window.JANGGI_KAKAO_SVG || {})[type];
+  function kakaoUrl(type, color, side) {
+    const entry = (window.JANGGI_KAKAO_SVG || {})[type];
+    if (!entry) return null;
+    const svg = (typeof entry === 'string') ? entry : entry[side];   // 옛 형식(한 벌)도 지원
     if (!svg) return null;
-    const key = type + '|' + color;
+    const key = type + '|' + side + '|' + color;
     if (!(key in kakaoUriCache)) {
       kakaoUriCache[key] = 'data:image/svg+xml;charset=utf-8,' +
         encodeURIComponent(svg.replace(/%COLOR%/g, color));
@@ -1089,8 +1091,8 @@
     if (pieceDesign === 'wood') {
       return 'assets/pieces/' + (pc.side === J.CHO ? 'blue' : 'red') + '_' + PIECE_FILE[pc.type] + '.svg';
     }
-    // 카카오 세트는 장·병 글자가 진영 구분 없이 '한(漢)·兵' 으로 박혀 있다 (원본 세트 그대로).
-    return kakaoUrl(pc.type, sideColor(pc.side));
+    // 카카오 세트는 진영별 원본 모양이 다르므로 초(C)/한(H) SVG를 각각 쓴다.
+    return kakaoUrl(pc.type, sideColor(pc.side), pc.side === J.CHO ? 'C' : 'H');
   }
   let engine = null;            // Fairy-Stockfish 핸들 (null 이면 내장 AI 사용)
   let engineState = 'loading';  // 'loading' | 'ready' | 'off'

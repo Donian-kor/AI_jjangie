@@ -21,9 +21,12 @@
 | `boards/JanggiBrown.svg` | `boards/JanggiBrown.svg` | 보드 — 갈색 |
 | `boards/JanggiStone.svg` | `boards/JanggiStone.svg` | 보드 — 돌 |
 | `pieces/red_*.svg`, `pieces/blue_*.svg` | `janggi_wooden/` | 말 — 목재 디자인 (색이 이미지에 박혀 있음) |
-| `pieces-kakao.js` | `janggi_kakao_janggi_style_white/` | 말 — 카카오 디자인 (아래 참조) |
+| `janggi_kakao_janggi_style_white/*.svg` | `janggi_kakao_janggi_style_white/` | 카카오 말 원본 SVG (이제 이 폴더가 생성 소스) |
+| `pieces-kakao.js` | 위 로컬 폴더에서 생성 | 말 — 카카오 디자인 (아래 참조) |
 
-`pieces-kakao.js` 는 **원본 SVG 를 JS 문자열로 내장한 자동 생성 파일**이다. 원본 SVG 는 92×92 `viewBox` 이고 글자 색이 `#e12810`(장) 또는 `#e1220a`(왕)로 박혀 있는데, 생성 과정에서 그 색만 `%COLOR%` 로 바꿔 넣었다. 실행 시 이 자리표시자를 원하는 색으로 치환해 `data:` URI 로 그린다.
+`pieces-kakao.js` 는 **로컬에 보관한 원본 SVG(`assets/janggi_kakao_janggi_style_white/`)를 JS 문자열로 내장한 자동 생성 파일**이다. 원본 SVG 는 92×92 `viewBox` 이고, 빨강 글자(`#e12810`·`#e1220a`)와 파랑 글자(`#112d94`·`#112c92`·`#112c91`)가 들어 있다. 생성기가 각 색만 `%COLOR%` 로 바꿔 넣고, 실행 시 이 자리표시자를 진영 색으로 치환해 `data:` URI 로 그린다.
+
+**초(파랑)와 한(빨강) 원본은 모양 자체가 다르다.** 예전에는 빨강 SVG 하나만 내장하고 색만 바꿔 두 진영에 썼기 때문에 파랑 이미지가 바뀌지 않았지만, 이제는 `blue_*.svg`와 `red_*.svg`를 각각 내장해 진영별 원본 모양을 그대로 사용한다.
 
 ## 왜 SVG 를 JS 에 내장했나
 
@@ -41,17 +44,30 @@ Copy-Item "$env:TEMP\opencode\chess-pieces\boards\Janggi*.svg" assets\boards\ -F
 Copy-Item "$env:TEMP\opencode\chess-pieces\janggi_wooden\*.svg" assets\pieces\ -Force
 Copy-Item "$env:TEMP\opencode\chess-pieces\LICENSE.txt" assets\LICENSE-chess-pieces.txt -Force
 
-# 카카오 말(색 변경 가능한 버전) 생성
+# 카카오 말(색 변경 가능한 버전) 생성 — 인수 없으면 로컬 보관본 사용
+node tools\make-piece-assets.js
+
+# 업스트림에서 카카오 세트를 새로 받아 갱신하려면 (저장소 루트 경로를 인수로 준다)
 node tools\make-piece-assets.js "$env:TEMP\opencode\chess-pieces"
 ```
 
-`tools/make-piece-assets.js` 는 기물 7종만 다룬다. 저장소에 새 기물이 생기면 `PIECES` 배열에 추가하고 다시 실행한다.
+기본 카카오 말 소스는 `assets/janggi_kakao_janggi_style_white/`이며, 위 폴더의 14개 SVG가 `pieces-kakao.js`를 만든다. `tools/make-piece-assets.js`는 기물 7종만 다루므로, 저장소에 새 기물이 생기면 `PIECES` 배열에 추가하고 다시 실행한다.
 
 ## 보드 정렬
 
 보드 SVG 는 전부 `viewBox="0 0 900 1000"` (= 9열 × 10행) 이고, 상하좌우 50 여백 + 한 칸 100 단위다. 게임 쪽 여백(`pad`)을 한 칸의 정확히 0.5배로 잡으면 이미지 격자와 겹친다. (`index.html` 의 `layout()` 참조)
 
 `pad` 가 정수 반올림되므로, `cell` 이 홀수면 끝 열이 최대 0.5px 어긋난다. 눈에 띄지 않는 수준이다.
+
+## 카카오 말 원본 출처·라이선스
+
+- **소스 폴더**: `assets/janggi_kakao_janggi_style_white/` (이 프로젝트가 보관하는 생성 원본)
+- **원본 저장소**: [Kadagaden/chess-pieces](https://github.com/Kadagaden/chess-pieces) 의 `janggi_kakao_janggi_style_white` 세트
+  - 가져온 커밋: `b035b0cc6a68e9fb99c872c8fe073c3ae3eba8a0` (2026-05-19)
+  - 폴더 바로가기: [해당 커밋의 카카오 세트](https://github.com/Kadagaden/chess-pieces/tree/b035b0cc6a68e9fb99c872c8fe073c3ae3eba8a0/janggi_kakao_janggi_style_white)
+- **저작자**: Kadagaden
+- **라이선스**: **CC BY 4.0** ([라이선스 전문](https://creativecommons.org/licenses/by/4.0/), 로컬 사본 `LICENSE-chess-pieces.txt`)
+- **이 프로젝트의 수정**: 글자 색만 `%COLOR%` 자리표시자로 치환 (`tools/make-piece-assets.js`). 초/한 SVG를 각각 내장하며 모양 자체는 원본을 유지한다.
 
 ## 라이선스 요건
 

@@ -125,6 +125,7 @@ node tests/fs_engine_test.js
 - **말·보드 이미지**: [Kadagaden/chess-pieces](https://github.com/Kadagaden/chess-pieces), 커밋 `b035b0cc`
   - 라이선스: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — 저작자 표시 필수
   - 라이선스 전문: `assets/LICENSE-chess-pieces.txt`
+  - 카카오 말 원본: [`assets/janggi_kakao_janggi_style_white/`](assets/janggi_kakao_janggi_style_white/) — 위 저장소의 동일 세트(커밋 `b035b0cc`)를 로컬에 보관한 생성 소스, CC BY 4.0
   - `pieces-kakao.js`는 원본 SVG의 글자 색만 치환한 수정본이므로 "색상 수정" 사실을 함께 표기
   - 재배포 시 `index.html` footer의 저작자·라이선스 표시를 유지할 것
 - **AI 엔진**: Fairy-Stockfish — `third_party/fairy-stockfish/`
