@@ -260,7 +260,8 @@
     return foes.some((m) => m.tr === k.r && m.tc === k.c);
   }
 
-  // 외통수: 두 장군이 같은 세로줄에 아무 기물 없이 마주보는 상태 (불법)
+  // 빅장: 두 장군이 같은 세로줄에 아무 기물 없이 마주 본 상태.
+  // 빅장을 만드는 수는 둘 수 있고, 상대가 응수한 뒤에도 이어지면 무승부다.
   function generalsFace(b) {
     const a = findGeneral(b, CHO);
     const z = findGeneral(b, HAN);
@@ -270,7 +271,8 @@
     return true;
   }
 
-  // 합법 수: 상대 장군을 잡는 수는 항상 합법. 그 외에는 장군당함/외통수이면 불법
+  // 합법 수: 상대 장군을 잡는 수는 항상 합법. 그 외에는 장군당함이면 불법.
+  // 빅장(두 장이 마주 봄)은 불법이 아니라 응수 후에 판정한다.
   function legalMoves(b, side) {
     const out = [];
     for (const m of genPseudoMoves(b, side)) {
@@ -279,7 +281,6 @@
       const nb = applyMove(b, m);
       if (!findGeneral(nb, side)) continue;
       if (isCheck(nb, side)) continue;
-      if (generalsFace(nb)) continue;
       out.push(m);
     }
     return out;
@@ -318,8 +319,11 @@
       this.turn = CHO;
       this.lastMove = null;
       this.history = [];
-      this.result = null; // {winner, reason: 'capture'|'mate'|'draw'} — winner 가 null 이면 무승부
+      this.result = null; // {winner, reason: 'capture'|'mate'|'draw'|'resign'} — winner 가 null 이면 무승부
       this.check = false;
+      // 빅장(두 장이 마주 본 상태)이면 상대가 응수해야 한다.
+      // 응수 뒤에도 마주 본 상태가 이어지면 무승부다.
+      this.bigJang = false;
       // 같은 국면이 3번 나오면 무승부로 본다(끝나지 않고 계속 도는 판을 막는다)
       this.repeats = [positionKey(this.board, this.turn)];
     }
@@ -337,7 +341,8 @@
       }
       this.history.push({
         board: this.board, turn: this.turn, lastMove: this.lastMove,
-        result: this.result, check: this.check, repeatLen: this.repeats.length,
+        result: this.result, check: this.check, bigJang: this.bigJang,
+        repeatLen: this.repeats.length,
       });
       const captured = this.board[m.tr][m.tc];
       this.board = applyMove(this.board, m);
@@ -352,6 +357,14 @@
         this.result = { winner: other(this.turn), reason: 'mate' };
         return true;
       }
+      // 빅장: 방금 마주 보게 됐으면 상대가 응수할 차례다.
+      // 응수한 뒤에도 마주 본 상태면 무승부, 끊으면 계속 둔다.
+      const facing = generalsFace(this.board);
+      if (facing && this.bigJang) {
+        this.result = { winner: null, reason: 'draw', bigJang: true };
+      }
+      this.bigJang = facing;
+      if (this.result) return true;
       // 같은 국면이 3번째면 무승부 (장군이 아니어도 판이 계속 도는 것을 막는다)
       const key = positionKey(this.board, this.turn);
       this.repeats.push(key);
@@ -369,6 +382,7 @@
       this.lastMove = s.lastMove;
       this.result = s.result;
       this.check = s.check;
+      this.bigJang = !!s.bigJang;
       this.repeats.length = s.repeatLen;
       return true;
     }
@@ -379,7 +393,7 @@
       return {
         board: this.board, turn: this.turn, lastMove: this.lastMove,
         history: this.history, result: this.result,
-        check: this.check, repeats: this.repeats,
+        check: this.check, bigJang: this.bigJang, repeats: this.repeats,
       };
     }
   }
@@ -424,7 +438,7 @@
       history.push({
         board: cloneBoard(s.board), turn: s.turn,
         lastMove: s.lastMove || null, result: null,
-        check: !!s.check, repeatLen: s.repeatLen,
+        check: !!s.check, bigJang: !!s.bigJang, repeatLen: s.repeatLen,
       });
     }
     let repeats = Array.isArray(d.repeats) ? d.repeats.filter((k) => typeof k === 'string') : [];
@@ -436,6 +450,7 @@
     g.history = history;
     g.result = null;
     g.check = isCheck(g.board, g.turn);            // 저장된 값 대신 다시 계산한다
+    g.bigJang = !!d.bigJang;
     g.repeats = repeats;
     return g;
   }
@@ -444,6 +459,7 @@
     ROWS, COLS, CHO, HAN, HANJA, HANGUL, LAYOUTS,
     other, inside, inPalace, initialBoard, cloneBoard, findGeneral,
     applyMove, isCheck, generalsFace, legalMoves, positionKey, Game,
+
     gameFromData,
   };
 

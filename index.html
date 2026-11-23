@@ -171,6 +171,16 @@
     from { transform: scale(1); }
     to   { transform: scale(1.1); }
   }
+  /* 빅장: 상대의 응수를 기다리는 주황 안내 */
+  #status.bigjang {
+    display: inline-block;
+    padding: 7px 18px;
+    border-radius: 9px;
+    background: #b3512a;
+    color: #fff;
+    font-size: 17px;
+    letter-spacing: 1px;
+  }
   /* 멍군·승패: 크게 */
   #status.result {
     padding: 9px 24px;
@@ -590,8 +600,8 @@
     #leftUi .ptag { align-self: flex-start; }
     /* 라벨·드롭다운 각각 같은 폭으로 고정해 세로 열이 가지런히 맞게 */
     #leftUi .fld { justify-content: space-between; gap: 4px; }
-    #leftUi .fld > span { flex: 0 0 44px; width: 44px; white-space: nowrap; font-size: 12px; }
-    #leftUi .panel select { flex: 0 0 122px; width: 122px; min-width: 0; padding: 6px 5px; font-size: 13.5px; }
+    #leftUi .fld > span { flex: 0 0 52px; width: 52px; white-space: nowrap; font-size: 12px; }
+    #leftUi .panel select { flex: 0 0 114px; width: 114px; min-width: 0; padding: 6px 5px; font-size: 13.5px; }
     #leftUi .spacer { display: none; }
     #leftUi .chk { gap: 4px; white-space: nowrap; }
     #leftUi .chk > span { font-size: 12px; }
@@ -649,6 +659,14 @@
           <option value="sangmasangma">상마상마</option>
         </select>
       </label>
+      <label class="fld"><span>AI 차림</span>
+        <select id="aiLayoutSel" title="컴퓨터가 사용할 말 배치입니다 (사람끼리 대국에서는 쓰지 않습니다)">
+          <option value="masangsangma" selected>마상상마</option>
+          <option value="sangmamasang">상마마상</option>
+          <option value="masangmasang">마상마상</option>
+          <option value="sangmasangma">상마상마</option>
+        </select>
+      </label>
     </div>
     <div class="prow">
       <span class="ptag">화면</span>
@@ -682,7 +700,7 @@
       <button id="langBtn" title="한자 표기와 한글 표기를 바꿉니다">한글 표기</button>
       <button id="helpBtn" title="두는 방법과 규칙을 봅니다">도움말</button>
     </div>
-    <div class="locknote" id="lockNote">대국 중에는 진영·상대·난이도·차림을 바꿀 수 없습니다. 바꾸려면 <b>새 게임</b>을 누르세요.</div>
+    <div class="locknote" id="lockNote">대국 중에는 진영·상대·난이도·차림·AI 차림을 바꿀 수 없습니다. 바꾸려면 <b>새 게임</b>을 누르세요.</div>
   </div>
 </aside>
 <div id="pieceTip" hidden></div>
@@ -808,7 +826,8 @@
         <li>말을 고르면 갈 수 있는 자리에 표시가 나타납니다. 같은 말을 다시 누르면 고르기가 풀립니다.</li>
         <li><em>초보자 도움</em>을 켜면, 판 위의 말에 마우스를 올리거나 손가락으로 말을 눌렀을 때 그 말의 움직임 설명과 기물 가치가 작은 풍선으로 뜹니다.</li>
         <li>차례·장군(체크)·결과는 판 위의 안내 줄에 나옵니다.</li>
-        <li>대국이 시작된 뒤에는 내 색·상대·난이도·차림을 바꿀 수 없습니다. 바꾸려면 <em>새 게임</em>을 누르세요.</li>
+        <li><em>애기</em> 난이도에서는 상대 말을 눌러 보면 그 말이 갈 수 있는 곳이 파란 점으로 표시됩니다. (연습용이며 실제 수는 두지 않습니다)</li>
+        <li>대국이 시작된 뒤에는 내 색·상대·난이도·차림·AI 차림을 바꿀 수 없습니다. 바꾸려면 <em>새 게임</em>을 누르세요.</li>
       </ul>
 
       <h3>이기고 지는 법</h3>
@@ -816,6 +835,8 @@
         <li>상대의 <em>장(將)</em>을 잡으면 이깁니다.</li>
         <li>상대가 둘 수 있는 수가 하나도 없으면(멍군) 이깁니다.</li>
         <li>같은 국면이 세 번 반복되면 무승부입니다.</li>
+        <li><em>빅장</em>(두 장이 사이에 기물 없이 마주 보는 것)은 막지 않습니다. 빅장이 걸리면 상대가 응수할 차례가 되고, 응수 후에도 마주 보면 무승부입니다. 상대가 궁을 피하거나 사이에 기물을 두면 계속 둡니다.</li>
+        <li>컴퓨터가 이미 크게 불리하다고 판단하면 <em>항복</em>합니다.</li>
         <li>장군을 불러 놓으면 안내 줄이 붉게 깜빡이고, 걸린 장 위에 붉은 표시가 나타나며 판이 잠깐 번쩍입니다. <em>초보자 도움</em>을 켜면 막을 수 있는 말도 표시됩니다.</li>
       </ul>
 
@@ -827,7 +848,7 @@
         <li><span class="hpKey">상(象)</span>한 칸 곧게 간 뒤 대각선으로 두 칸 꺾습니다. 중간 두 칸이 비어 있어야 합니다.</li>
         <li><span class="hpKey">사(士)</span>와 <span class="hpKey">장(將)</span>은 궁성(✕ 표시) 안에서만 움직입니다.</li>
         <li><span class="hpKey">졸(卒)</span>·<span class="hpKey">병(兵)</span>은 앞과 옆으로 한 칸. 뒤로는 못 가며, 상대 궁성의 ✕ 선 위에서는 대각선으로도 갑니다.</li>
-        <li>두 장(將)이 같은 줄에서 마주 보게 되는 수는 둘 수 없습니다(빅장).</li>
+        <li>두 장(將)이 같은 줄에서 마주 보는 상태(빅장)도 둘 수 있습니다. 다만 응수 후까지 이어지면 무승부입니다.</li>
       </ul>
 
       <h3>단추 안내</h3>
@@ -892,7 +913,7 @@
 </footer>
 
 <!-- 규칙·AI 를 고치면 아래 ?v= 숫자를 올려야 한다. 안 올리면 브라우저가 옛 파일을 그대로 쓴다 -->
-<script src="janggi.js?v=8"></script>
+<script src="janggi.js?v=9"></script>
 <script src="fs-engine.js?v=6"></script>
 <script src="ai.js?v=4"></script>
 <script src="assets/pieces-kakao.js?v=1"></script>
@@ -908,6 +929,8 @@
   let level = 2;
   let selected = null;          // {r, c}
   let selectedMoves = [];       // 선택 기물의 합법 수
+  let previewFrom = null;       // 애기 난이도: 상대 말을 눌렀을 때의 미리보기 출발 칸
+  let previewMoves = [];        // 애기 난이도: 그 말이 갈 수 있는 칸 (실제 착수는 안 됨)
   let thinking = false;
   let lang = 'hanja';           // 기물 표기: 'hanja'(한자) | 'hangul'(한글)
   let hintMove = null;          // 힌트(추천 수) — 점선 원으로 보여 준다
@@ -949,6 +972,7 @@
     sideSel.disabled = locked || vsHuman;
     levelSel.disabled = locked || vsHuman || challenge;   // 연승 도전 중에는 난이도가 자동으로 정해진다
     layoutSel.disabled = locked;
+    aiLayoutSel.disabled = locked || vsHuman;
     oppSel.disabled = locked;
     lockNote.className = 'locknote' + (locked ? ' on' : '');
     syncDefenseHints();
@@ -1080,6 +1104,7 @@
   const sideSel = document.getElementById('sideSel');
   const levelSel = document.getElementById('levelSel');
   const layoutSel = document.getElementById('layoutSel');
+  const aiLayoutSel = document.getElementById('aiLayoutSel');
   const oppSel = document.getElementById('oppSel');
   
   const lockNote = document.getElementById('lockNote');
@@ -1407,6 +1432,22 @@
         ctx.fill();
       }
     }
+
+    // 애기 난이도 도움: 상대 말의 이동 가능 위치는 파란 점으로 구분해 표시
+    if (previewFrom && !viewState) {
+      const p = toScreen(previewFrom.r, previewFrom.c);
+      ctx.fillStyle = 'rgba(21, 101, 192, .28)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, cell * 0.46, 0, Math.PI * 2);
+      ctx.fill();
+      for (const m of previewMoves) {
+        const q = toScreen(m.tr, m.tc);
+        ctx.fillStyle = 'rgba(21, 101, 192, .7)';
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, cell * 0.13, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
   }
 
   function line(x1, y1, x2, y2) {
@@ -1564,8 +1605,10 @@
   // 끝난 이유를 관점에 맞게 적는다 ('졌습니다. 상대 장군을 잡았습니다'처럼 반대로 읽히지 않게)
   function resultHowText() {
     const r = game.result;
-    if (r.reason === 'draw') return '같은 국면이 3번 반복되었습니다';
+    if (r.reason === 'draw') return r.bigJang
+      ? '빅장이 풀리지 않아 무승부입니다' : '같은 국면이 3번 반복되었습니다';
     const won = vsHuman || r.winner === humanSide;   // 사람끼리는 이긴 쪽 관점으로 읽으면 된다
+    if (r.reason === 'resign') return won ? '상대가 항복했습니다' : '내가 항복했습니다';
     if (r.reason === 'mate') {
       return won ? '상대가 두 수를 둘 수 없습니다 (멍군)'
                  : '내가 둘 수 있는 수가 없습니다 (멍군)';
@@ -1630,6 +1673,13 @@
         mateWarnHtml();
       return;
     }
+    if (game.bigJang) {
+      setTurnCue(false, 'bigjang');
+      statusEl.className = 'bigjang';
+      statusEl.innerHTML = '빅장! 상대가 응수해야 합니다 ' +
+        '<span style="font-size:12px;letter-spacing:0">(응수 후에도 마주 보면 무승부)</span>';
+      return;
+    }
     if (vsHuman) {
       setTurnCue(true, '2p|' + game.turn + '|' + turnCueEpoch);
       statusEl.innerHTML = statusName(game.turn) + ' 차례입니다 ' +
@@ -1668,7 +1718,22 @@
     }
 
     const pc = game.board[g.r][g.c];
+    // 애기 난이도 도움: 상대 말을 누르면 그 말이 갈 수 있는 칸만 보여 준다 (실제 수는 두지 않는다)
+    if (pc && !vsHuman && pc.side !== humanSide && level === 0) {
+      if (previewFrom && previewFrom.r === g.r && previewFrom.c === g.c) {
+        clearSelection(); refresh(); return;
+      }
+      clearSelection();
+      previewFrom = g;
+      previewMoves = J.legalMoves(game.board, pc.side).filter((m) => m.fr === g.r && m.fc === g.c);
+      flashTip(previewMoves.length
+        ? '상대 말이 갈 수 있는 곳을 파란 점으로 표시했습니다 (애기 도움)'
+        : '이 상대 말은 지금 갈 곳이 없습니다.', 2200);
+      refresh();
+      return;
+    }
     if (pc && (vsHuman || pc.side === humanSide)) {
+      clearSelection();
       const legal = game.moves().filter((m) => m.fr === g.r && m.fc === g.c);
       if (!legal.length) {
         // 움직일 수 없는 말: 이유를 알려 준다. (특히 장군 중 대다수 말이 여기에 걸린다)
@@ -1701,6 +1766,7 @@
   // 고르기가 풀리면 손가락 설명 풍선도 함께 닫는다
   function clearSelection() {
     selected = null; selectedMoves = [];
+    previewFrom = null; previewMoves = [];
     if (pieceTipMode === 'touch') { pieceTipMode = null; clearTimeout(pieceTipTimer); hidePieceTip(); }
   }
 
@@ -1728,6 +1794,30 @@
     });
   }
 
+  // ---- 항복: 이미 기운 판을 기물이 다 잡힐 때까지 두지 않게 ---------------
+  const RESIGN_CP = -3500;       // 내 관점 -35점 이하면 항복
+  const RESIGN_MATE_IN = 4;      // 4수 안에 지는 게 보이면 항복
+  let resignCheckedAt = -1;      // 마지막으로 항복 평가를 한 수순 길이
+  async function maybeResign(token) {
+    if (vsHuman || !engine || engineState !== 'ready' || game.result || game.bigJang) return false;
+    if (game.history.length < 8) return false;                       // 초반에는 절대 항복하지 않는다
+    if (game.history.length - resignCheckedAt < 2) return false;     // 2수에 한 번만 확인
+    resignCheckedAt = game.history.length;
+    let r = null;
+    try { r = await engine.analyze(JanggiFS.boardToFen(game.board, game.turn), 350); }
+    catch (e) { return false; }
+    if (token !== aiToken || game.result || game.bigJang || !r) return false;
+    const hasMate = r.mate !== null && r.mate !== undefined;
+    const mateLose = hasMate && r.mate < 0 && Math.abs(r.mate) <= RESIGN_MATE_IN;
+    const cpLose = !hasMate && evalCp(r) !== null && evalCp(r) <= RESIGN_CP;
+    if (!mateLose && !cpLose) return false;
+    game.result = { winner: J.other(game.turn), reason: 'resign' };
+    recordFinish(game.result.winner);
+    saveGame();                         // 끝난 판이므로 이어하기 저장본은 지운다
+    updateStatus(); refresh(); showResultIfOver();
+    return true;
+  }
+
   function scheduleAI() {
     thinking = true;
     updateStatus();
@@ -1736,6 +1826,7 @@
     setTimeout(async function () {
       let mv = null;
       try {
+        if (await maybeResign(token)) return;   // 항복했으면 수를 두지 않는다
         mv = await engineMove();
         if (token !== aiToken) return;   // 새 게임·무르기 등으로 무효화된 경우
         if (!mv) mv = JanggiAI.chooseMove(game.board, game.turn, level);
@@ -2165,6 +2256,7 @@
     hintNextAt = 0;
     clearTimeout(hintTimer);
     hintTimer = 0;
+    resignCheckedAt = -1;      // 항복 평가도 새 판에서 다시 시작
     // 진행 중이던 판은 중단으로 보고 패로 남긴다 (한 수라도 둔 판만, 사람끼리 대국은 제외)
     if (game && humanMoves > 0 && !game.result) recordAbandon();
     aiToken++;
@@ -2180,9 +2272,10 @@
     // 사람끼리 대국에서는 고른 차림을 양쪽에 똑같이 적용한다.
     game = vsHuman
       ? new J.Game({ layoutCho: layoutSel.value, layoutHan: layoutSel.value })
-      : new J.Game(humanSide === J.CHO
-        ? { layoutCho: layoutSel.value }
-        : { layoutHan: layoutSel.value });
+      : new J.Game({
+        layoutCho: humanSide === J.CHO ? layoutSel.value : aiLayoutSel.value,
+        layoutHan: humanSide === J.HAN ? layoutSel.value : aiLayoutSel.value,
+      });
     level = parseInt(levelSel.value, 10);
     // 연승 도전: 단계에 맞는 난이도로 시작한다 ('다음 단계' 단추가 stage 를 넘겨 준다)
     if (challenge && !vsHuman) {
@@ -2229,6 +2322,7 @@
   sideSel.addEventListener('change', newGame);
   levelSel.addEventListener('change', newGame);
   layoutSel.addEventListener('change', newGame);
+  aiLayoutSel.addEventListener('change', newGame);
   oppSel.addEventListener('change', newGame);
   let resizeRaf = 0;                 // 연속 resize 를 한 프레임에 한 번으로 모은다
   let lastLayoutW = 0;
@@ -2458,7 +2552,7 @@
       seenSaveAt = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         v: 1, side: humanSide, vs: vsHuman ? 'human' : 'ai',
-        level: level, layout: layoutSel.value,
+        level: level, layout: layoutSel.value, aiLayout: aiLayoutSel.value,
         ch: challenge && !vsHuman ? chStage : 0,
         humanMoves: humanMoves, game: game.toData(),
         at: seenSaveAt, tab: TAB_ID,
@@ -2480,6 +2574,7 @@
         vs: d.vs === 'human' ? 'human' : 'ai',
         level: Math.min(4, Math.max(0, parseInt(d.level, 10) || 0)),
         layout: String(d.layout || ''),
+        aiLayout: String(d.aiLayout || ''),
         ch: Math.min(4, Math.max(0, parseInt(d.ch, 10) || 0)),
         humanMoves: d.humanMoves | 0,
         game: g,
@@ -2510,6 +2605,7 @@
     anim = null;
     clearSelection();
     hintMove = null;
+    resignCheckedAt = -1;
     vsHuman = p.vs === 'human';
     humanSide = vsHuman ? J.CHO : (p.side === 'H' ? J.HAN : J.CHO);
     level = p.level;
@@ -2523,6 +2619,7 @@
     sideSel.value = p.side;       // (대국 중이라 아래 설정들은 잠겨 있다)
     levelSel.value = String(p.level);
     if (layoutSel.querySelector('option[value="' + p.layout + '"]')) layoutSel.value = p.layout;
+    if (aiLayoutSel.querySelector('option[value="' + p.aiLayout + '"]')) aiLayoutSel.value = p.aiLayout;
     applyPosition();
   }
   // 저장된 판을 그만둔다 (중단이므로 패로 기록)

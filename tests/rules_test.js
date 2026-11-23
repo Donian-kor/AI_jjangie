@@ -197,7 +197,7 @@ test('炮(포): 궁성 대각선도 모자 하나를 넘어야 이동', () => {
   assert.ok(!ms.includes('8,3'), '모자 없는 직선 방향 불가');
 });
 
-test('외통수: 두 장군이 마주 보는 칸으로는 못 감', () => {
+test('빅장: 장군 사이를 막던 기물이 줄을 비우는 수도 합법', () => {
   const b = build([
     [0, 4, J.CHO, 'K'],
     [9, 4, J.HAN, 'K'],
@@ -205,10 +205,8 @@ test('외통수: 두 장군이 마주 보는 칸으로는 못 감', () => {
   ]);
   const ms = movesOf(b, 5, 4);
   assert.ok(ms.includes('4,4'), '세로줄을 계속 막는 이동은 합법');
+  assert.ok(ms.includes('5,3'), '줄을 비워 빅장을 만드는 수도 합법');
   assert.ok(ms.includes('9,4'), '상대 장군을 잡는 수는 합법');
-  for (const m of ms) {
-    assert.strictEqual(m.split(',')[1], '4', '세로줄을 벗어나면 외통수 → 불법: ' + m);
-  }
 });
 
 test('장군(체크)과 체크메이트 판정', () => {
@@ -330,6 +328,42 @@ test('무승부: 같은 국면이 3번 반복되면 무승부', () => {
   assert.strictEqual(g.moves().length, 0, '무승부 뒤에는 둘 수가 없다');
   g.undo();
   assert.strictEqual(g.result, null, '무르기로 무승부가 풀려야 함');
+});
+
+function bigJangGame() {
+  const b = Array.from({ length: J.ROWS }, () => Array(J.COLS).fill(null));
+  b[0][4] = { side: J.CHO, type: 'K' };
+  b[9][4] = { side: J.HAN, type: 'K' };
+  b[5][4] = { side: J.CHO, type: 'R' };   // 이 차를 옆으로 빼면 빅장이 된다
+  b[7][0] = { side: J.HAN, type: 'P' };   // 응수용 (마주 본 상태 유지)
+  b[8][1] = { side: J.HAN, type: 'R' };   // 응수용 (사이를 막아 빅장 해제)
+  const g = new J.Game();
+  g.board = b; g.turn = J.CHO; g.history = []; g.result = null; g.check = false;
+  g.bigJang = false; g.repeats = [J.positionKey(b, J.CHO)];
+  return g;
+}
+test('빅장: 마주 보게 하는 수는 합법이고, 응수 뒤에도 이어지면 무승부', () => {
+  const g = bigJangGame();
+  const open = { fr: 5, fc: 4, tr: 5, tc: 3 };
+  assert.ok(g.moves().some((m) => m.fr === open.fr && m.fc === open.fc && m.tr === open.tr && m.tc === open.tc),
+    '빅장을 만드는 수가 합법이어야 함');
+  g.play(open);
+  assert.ok(J.generalsFace(g.board), '장끼리 마주 봐야 함');
+  assert.strictEqual(g.result, null, '빅장이 걸린 직후에는 아직 대국 중');
+  assert.strictEqual(g.bigJang, true);
+  g.play({ fr: 7, fc: 0, tr: 6, tc: 0 });   // 한 병: 마주 본 상태 유지
+  assert.ok(g.result && g.result.reason === 'draw' && g.result.bigJang, '응수 후에도 빅장이면 무승부');
+});
+test('빅장: 상대가 사이를 막아 끊으면 대국이 이어진다', () => {
+  const g = bigJangGame();
+  g.play({ fr: 5, fc: 4, tr: 5, tc: 3 });
+  const block = { fr: 8, fc: 1, tr: 8, tc: 4 };
+  assert.ok(g.moves().some((m) => m.fr === block.fr && m.fc === block.fc && m.tr === block.tr && m.tc === block.tc),
+    '사이에 기물을 두는 응수가 합법이어야 함');
+  g.play(block);
+  assert.strictEqual(g.result, null, '빅장이 끊기면 계속 둔다');
+  assert.strictEqual(g.bigJang, false);
+  assert.ok(!J.generalsFace(g.board));
 });
 
 test('무승부: 무르기로 되돌린 뒤 다시 반복해도 같은 판정', () => {
