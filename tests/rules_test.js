@@ -249,9 +249,9 @@ test('Game: 장군 잡으면 즉시 승리', () => {
   assert.ok(g.result && g.result.winner === J.CHO);
 });
 
-test('AI: 난이도 4단계(애기~고수) 모두 합법 수를 냄', () => {
+test('AI: 난이도 5단계(애기~장기의 신) 모두 합법 수를 냄', () => {
   const b = J.initialBoard();
-  for (const level of [0, 1, 2, 3]) {
+  for (const level of [0, 1, 2, 3, 5]) {
     const mv = AI.chooseMove(b, J.CHO, level);
     assert.ok(mv, '레벨 ' + level + ' 수 반환');
     const legal = J.legalMoves(b, J.CHO);

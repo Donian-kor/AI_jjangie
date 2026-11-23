@@ -160,6 +160,18 @@ const STARTPOS = 'rnba1abnr/4k4/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/4K4/RNBA1ABN
     assert.ok(Array.isArray(cands) && cands.length > 0, '수순 정보 준 bestMove 후보 없음');
   });
 
+  test('난이도 설정: 장기의 신(레벨 5)은 Skill 상한 + 긴 탐색 + 큰 해시', () => {
+    assert.ok(FS.LEVELS[5], '레벨 5 설정 없음');
+    assert.strictEqual(FS.LEVELS[5].skill, 20);
+    assert.strictEqual(FS.LEVELS[5].hash, 64);
+    assert.ok(FS.LEVELS[5].movetime > FS.LEVELS[4].movetime, '최강보다 탐색 시간이 길어야 함');
+  });
+
+  await testAsync('엔진: 장기의 신(레벨 5)도 후보 수를 반환', async () => {
+    const cands = await engine.bestMove(FS.boardToFen(J.initialBoard(), J.CHO), 5);
+    assert.ok(Array.isArray(cands) && cands.length > 0, '장기의 신 후보 없음');
+  });
+
   await testAsync('엔진: 애기(레벨 0)도 후보 수를 반환', async () => {
     const cands = await engine.bestMove(FS.boardToFen(J.initialBoard(), J.CHO), 0);
     assert.ok(Array.isArray(cands) && cands.length > 0, '애기 후보 수 없음');

@@ -106,16 +106,17 @@
   }
 
   // ---- 난이도 설정 -----------------------------------------------------
-  // 0 = 애기, 1 = 초보, 2 = 중급, 3 = 고수, 4 = 최강
+  // 0 = 애기, 1 = 초보, 2 = 중급, 3 = 고수, 4 = 최강, 5 = 장기의 신
   // Skill Level 로 실력을 제한하고, movetime 으로 탐색 시간을 정한다.
-  // (3번과 4번이 둘 다 skill 20 이면 실력 차이가 거의 없어서 3번을 확실히 낮췄다)
+  // (Skill Level 상한은 20. 그 위 '장기의 신'은 skill 20에 탐색 시간과 해시를 늘려 강화한다)
   // 애기는 가장 낮은 skill 에 탐색 시간도 짧게 두고, 후보 중 무작위로 고른다(아래 engineMove).
   const LEVELS = {
-    0: { skill: 0, movetime: 150 },
-    1: { skill: 0, movetime: 400 },
-    2: { skill: 8, movetime: 1000 },
-    3: { skill: 14, movetime: 2000 },
-    4: { skill: 20, movetime: 4000 },   // 베타: 힘을 숨기지 않고 전력으로 둔다
+    0: { skill: 0, movetime: 150, hash: 16 },
+    1: { skill: 0, movetime: 400, hash: 16 },
+    2: { skill: 8, movetime: 1000, hash: 16 },
+    3: { skill: 14, movetime: 2000, hash: 16 },
+    4: { skill: 20, movetime: 4000, hash: 16 },   // 힘을 숨기지 않고 전력으로 둔다
+    5: { skill: 20, movetime: 8000, hash: 64 },   // 장기의 신: Skill 상한 + 2배 탐색 + 큰 해시
   };
 
   const UCI_HANDSHAKE_TIMEOUT = 15000;
@@ -132,6 +133,7 @@
     let waiting = null;                 // 현재 대기 중인 탐색 결과
     let searching = false;              // 엔진이 아직 탐색 중인가 (멈춤·배출이 필요할 수 있다)
     let searchTimeouts = 0;             // 잇달아 생긴 탐색 응답 시간 초과 횟수
+    let currentHash = 16;               // 난이도별 해시 크기 (바뀔 때만 setoption)
     let dead = null;                    // 엔진을 못 쓰게 된 이유 (있으면 모든 요청을 즉시 거절)
     let readyPromise = null;
     const listeners = [];             // 엔진 출력 구경용 콜백
@@ -179,7 +181,7 @@
         // 장기 변형 고정 + 단일 스레드(모바일 메모리 절약)
         send('setoption name UCI_Variant value janggi');
         send('setoption name Threads value 1');
-        send('setoption name Hash value 16');
+        send('setoption name Hash value ' + currentHash);
         send('isready');
         await waitFor((l) => /^readyok/.test(l), UCI_HANDSHAKE_TIMEOUT);
       })();
@@ -244,6 +246,10 @@
         const pv = {};                       // multipv 번호 → 최선 수
         send('setoption name MultiPV value ' + MULTI_PV);
         send('setoption name Skill Level value ' + cfg.skill);
+        if (cfg.hash && cfg.hash !== currentHash) {
+          send('setoption name Hash value ' + cfg.hash);   // 장기의 신(64MB)에서만 키운다
+          currentHash = cfg.hash;
+        }
         if (position && position.fen && Array.isArray(position.moves) && position.moves.length) {
           // 같은 국면이 몇 번 나왔는지 엔진이 알게 해야 의미 없는 반복수를 두지 않는다
           send('position fen ' + position.fen + ' moves ' + position.moves.join(' '));
@@ -456,7 +462,7 @@
   }
 
   const api = {
-    boardToFen, fenToBoard, moveToUci, uciToMove, movesFromHistory,
+    boardToFen, fenToBoard, moveToUci, uciToMove, movesFromHistory, LEVELS,
     createEngine,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

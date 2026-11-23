@@ -91,7 +91,7 @@
     return { move: best, aborted: ctx.abort, nodes: ctx.nodes };
   }
 
-  // level: 0 = 애기, 1 = 초보, 2 = 중급, 3 = 고수, 4 = 최강
+  // level: 0 = 애기, 1 = 초보, 2 = 중급, 3 = 고수, 4 = 최강, 5 = 장기의 신
   function chooseMove(board, side, level) {
     const moves = Janggi.legalMoves(board, side);
     if (moves.length === 0) return null;
@@ -113,8 +113,9 @@
       return pool[(Math.random() * pool.length) | 0].m;
     }
 
-    const maxDepth = level === 2 ? 3 : 4;
-    const budget = level === 2 ? 1000 : 2500; // 모바일 멈춤 방지용 시간 제한(밀리초)
+    const maxDepth = level >= 5 ? 6 : (level === 2 ? 3 : 4);
+    // 모바일 멈춤 방지용 시간 제한(밀리초). 장기의 신은 더 오래 생각한다.
+    const budget = level >= 5 ? 5000 : (level === 2 ? 1000 : 2500);
     const deadline = Date.now() + budget;
     let best = moves[0];
     for (let d = 1; d <= maxDepth; d++) {

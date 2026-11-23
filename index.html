@@ -109,6 +109,9 @@
   .btn-main:not(:disabled):active { background: #6b4a2b; }
   /* 대국 중 잠긴 설정 */
   .panel select:disabled { opacity: .45; cursor: not-allowed; background: #f1e9d8; }
+  /* 최상위 난이도 '장기의 신'은 빨강으로 강조 */
+  #levelSel option[value="5"] { color: #c62828; font-weight: bold; }
+  #levelSel.highest { color: #c62828; font-weight: bold; }
   .locknote {
     display: none;
     margin-top: 7px;
@@ -656,6 +659,7 @@
           <option value="2">중급</option>
           <option value="3">고수</option>
           <option value="4" selected>최강 (전력)</option>
+          <option value="5">장기의 신</option>
         </select>
       </label>
       <label class="fld aiLayout"><span>AI 차림</span>
@@ -921,8 +925,8 @@
 
 <!-- 규칙·AI 를 고치면 아래 ?v= 숫자를 올려야 한다. 안 올리면 브라우저가 옛 파일을 그대로 쓴다 -->
 <script src="janggi.js?v=9"></script>
-<script src="fs-engine.js?v=6"></script>
-<script src="ai.js?v=4"></script>
+<script src="fs-engine.js?v=7"></script>
+<script src="ai.js?v=5"></script>
 <script src="assets/pieces-kakao.js?v=3"></script>
 <script>
 (function () {
@@ -2247,6 +2251,7 @@
   // 판이 바뀐 뒤(새 게임·이어하기·이 자리부터 다시 두기) 화면을 한꺼번에 다시 맞춘다
   function applyPosition() {
     flipped = humanSide === J.HAN;
+    levelSel.classList.toggle('highest', Number(levelSel.value) === 5);  // 장기의 신 빨강 강조
     layout();
     refresh();
     renderCaptured();
@@ -2581,7 +2586,7 @@
       return {
         side: d.side === 'H' ? 'H' : 'C',
         vs: d.vs === 'human' ? 'human' : 'ai',
-        level: Math.min(4, Math.max(0, parseInt(d.level, 10) || 0)),
+        level: Math.min(5, Math.max(0, parseInt(d.level, 10) || 0)),
         layout: String(d.layout || ''),
         aiLayout: String(d.aiLayout || ''),
         ch: Math.min(4, Math.max(0, parseInt(d.ch, 10) || 0)),
