@@ -596,19 +596,26 @@
       background: var(--bg);
     }
     #leftUi .panel { padding: 6px; }
-    #leftUi .prow { flex-direction: column; align-items: stretch; gap: 6px; }
+    #leftUi .prow { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 6px; }
     #leftUi .ptag { align-self: flex-start; }
     /* 라벨·드롭다운 각각 같은 폭으로 고정해 세로 열이 가지런히 맞게 */
+    #leftUi .fld, #leftUi .chk { min-width: 0; }
     #leftUi .fld { justify-content: space-between; gap: 4px; }
-    #leftUi .fld > span { flex: 0 0 52px; width: 52px; white-space: nowrap; font-size: 12px; }
-    #leftUi .panel select { flex: 0 0 114px; width: 114px; min-width: 0; padding: 6px 5px; font-size: 13.5px; }
+    #leftUi .fld > span { flex: 0 0 60px; width: 60px; white-space: nowrap; font-size: 12px; }
+    #leftUi .panel select { flex: 0 0 100px; width: 100px; min-width: 0; padding: 6px 5px; font-size: 13.5px; }
+    /* 내 차림(파랑) vs AI 차림(주황): 점·테두리 색으로 한눈에 구분 */
+    #leftUi .mineLayout > span::before { content: '●'; color: var(--cho); margin-right: 5px; font-size: 10px; }
+    #leftUi .aiLayout > span::before { content: '●'; color: #b3512a; margin-right: 5px; font-size: 10px; }
+    #leftUi #layoutSel { border-left: 4px solid var(--cho); }
+    #leftUi #aiLayoutSel { border-left: 4px solid #b3512a; }
     #leftUi .spacer { display: none; }
     #leftUi .chk { gap: 4px; white-space: nowrap; }
     #leftUi .chk > span { font-size: 12px; }
     #leftUi .chk input { width: 14px; height: 14px; }
     #leftUi .panel button { padding: 7px; min-height: 42px; font-size: 14px; }
-    #leftUi .panel button.mini, #leftUi #zoomVal { padding: 5px 6px; min-height: 0; font-size: 13px; }
-    #leftUi #zoomVal { min-width: 42px; }
+    #leftUi .panel button.mini, #leftUi #zoomVal { padding: 5px 4px; min-height: 0; font-size: 13px; }
+    #leftUi .panel button.mini { min-width: 26px; }
+    #leftUi #zoomVal { min-width: 36px; }
     #boardArea { grid-column: 2; grid-row: 3; min-width: 0; }
     /* 차례 안내는 제목처럼 화면 전체 중앙에: 왼쪽 기둥(195px)만큼 밀린 중앙선을 되돌린다 */
     #status { position: relative; left: calc(195px / -2); }
@@ -651,16 +658,16 @@
           <option value="4" selected>최강 (전력)</option>
         </select>
       </label>
-      <label class="fld"><span>차림</span>
-        <select id="layoutSel">
+      <label class="fld aiLayout"><span>AI 차림</span>
+        <select id="aiLayoutSel" title="컴퓨터가 사용할 말 배치입니다 (사람끼리 대국에서는 쓰지 않습니다)">
           <option value="masangsangma" selected>마상상마</option>
           <option value="sangmamasang">상마마상</option>
           <option value="masangmasang">마상마상</option>
           <option value="sangmasangma">상마상마</option>
         </select>
       </label>
-      <label class="fld"><span>AI 차림</span>
-        <select id="aiLayoutSel" title="컴퓨터가 사용할 말 배치입니다 (사람끼리 대국에서는 쓰지 않습니다)">
+      <label class="fld mineLayout"><span>내 차림</span>
+        <select id="layoutSel">
           <option value="masangsangma" selected>마상상마</option>
           <option value="sangmamasang">상마마상</option>
           <option value="masangmasang">마상마상</option>
