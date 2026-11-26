@@ -458,7 +458,9 @@
   const api = {
     ROWS, COLS, CHO, HAN, HANJA, HANGUL, LAYOUTS,
     other, inside, inPalace, initialBoard, cloneBoard, findGeneral,
-    applyMove, isCheck, generalsFace, legalMoves, positionKey, Game,
+    applyMove, isCheck, generalsFace, legalMoves,
+    pseudoMoves: genPseudoMoves,   // 형태상 수(장군 필터 전) — UI 안내용
+    positionKey, Game,
 
     gameFromData,
   };

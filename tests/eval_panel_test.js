@@ -233,6 +233,25 @@ async function testAsync(name, fn) {
     assert.strictEqual(ctx.engineEvalEl.hidden, true);
   });
 
+  // ---- 초보자 도움: 못 가는 말의 이유 -------------------------------------
+  test('초보자 도움: 발판 없는 포는 "넘어야 한다"고 알려준다', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const m = /const STUCK_REASON = \{[\s\S]*?\n  \};/.exec(html);
+    assert.ok(m, 'STUCK_REASON 상수 없음');
+    const ctx = { J, console };
+    vm.createContext(ctx);
+    vm.runInContext(m[0].replace(/^const /, 'var ') + '\n' + extractFunc('noMoveReason'), ctx);
+
+    const b = J.initialBoard().map((row) => row.map(() => null));
+    b[1][3] = { side: J.CHO, type: 'K' };          // 장은 포와 다른 열에 (장도 발판이 됨)
+    b[8][5] = { side: J.HAN, type: 'K' };
+    b[5][4] = { side: J.CHO, type: 'C' };          // 발판 없음
+    assert.ok(/넘어야/.test(ctx.noMoveReason(b, 5, 4)), ctx.noMoveReason(b, 5, 4));
+
+    b[5][6] = { side: J.HAN, type: 'P' };          // 발판 생김 → 형태상 수 존재
+    assert.ok(/위험/.test(ctx.noMoveReason(b, 5, 4)), ctx.noMoveReason(b, 5, 4));
+  });
+
   // ---- 새로 고침(refreshEngineEval) -------------------------------------
 
   // 엔진 흉내: analyze 를 호출하면 정해진 답을 돌려준다

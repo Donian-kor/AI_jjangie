@@ -83,6 +83,27 @@ test('炮(포): 모자를 넘어서만 이동/포획, 인접 기물은 못 잡�
   assert.ok(!ms.includes('5,6'), '자기 모자는 못 잡음');
 });
 
+test('pseudoMoves: 장군 필터 전 형태상 수를 돌려준다 (UI 안내용)', () => {
+  const b = build([
+    [5, 4, J.CHO, 'C'],
+    [5, 6, J.HAN, 'P'],   // 모자
+    [5, 8, J.HAN, 'R'],
+  ]);
+  const shape = J.pseudoMoves(b, J.CHO).filter((m) => m.fr === 5 && m.fc === 4);
+  assert.ok(shape.length > 0, '형태상 수가 있어야 함');
+  assert.ok(shape.some((m) => m.tr === 5 && m.tc === 8), '모자를 넘겨 잡는 형태상 수');
+
+  // 장은 다른 열에 둔다 (장도 발판이 될 수 있으므로)
+  const b2 = build([
+    [5, 4, J.CHO, 'C'],
+    [1, 3, J.CHO, 'K'],
+    [8, 5, J.HAN, 'K'],
+  ]);
+  assert.strictEqual(
+    J.pseudoMoves(b2, J.CHO).filter((m) => m.fr === 5 && m.fc === 4).length, 0,
+    '발판이 없으면 형태상 수도 없다');
+});
+
 test('炮(포): 말·장(왕)도 모자가 되어 넘을 수 있다', () => {
   // 직선: 적 마를 모자로 넘어 적 차 포획, 모자 뒤 빈 칸으로도 이동 가능
   const b = build([
