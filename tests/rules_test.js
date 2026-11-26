@@ -83,6 +83,43 @@ test('炮(포): 모자를 넘어서만 이동/포획, 인접 기물은 못 잡�
   assert.ok(!ms.includes('5,6'), '자기 모자는 못 잡음');
 });
 
+test('炮(포): 말·장(왕)도 모자가 되어 넘을 수 있다', () => {
+  // 직선: 적 마를 모자로 넘어 적 차 포획, 모자 뒤 빈 칸으로도 이동 가능
+  const b = build([
+    [5, 4, J.CHO, 'C'],
+    [5, 6, J.HAN, 'N'],   // 모자(적 마)
+    [5, 8, J.HAN, 'R'],   // 잡을 대상
+  ]);
+  const ms = movesOf(b, 5, 4);
+  assert.ok(ms.includes('5,8'), '말을 모자로 넘어 적 차 포획 가능해야 함');
+  assert.ok(ms.includes('5,7'), '말 뒤 빈 칸으로 이동 가능해야 함');
+  assert.ok(!ms.includes('5,6'), '모자(적 말)는 못 잡음');
+
+  // 장(왕)도 모자가 될 수 있다 (아군 장 포함)
+  const b2 = build([
+    [5, 4, J.CHO, 'C'],
+    [5, 5, J.CHO, 'K'],   // 모자(아군 장)
+    [5, 7, J.HAN, 'R'],
+  ]);
+  const ms2 = movesOf(b2, 5, 4);
+  assert.ok(ms2.includes('5,7'), '장을 모자로 넘어 적 차 포획 가능해야 함');
+  assert.ok(ms2.includes('5,6'), '장 뒤 빈 칸으로 이동 가능해야 함');
+
+  // 궁성 대각선에서도 마·장 모자 가능
+  const b3 = build([
+    [7, 3, J.CHO, 'C'],
+    [8, 4, J.HAN, 'N'],   // 대각선 모자(적 마)
+    [9, 5, J.HAN, 'R'],
+  ]);
+  assert.ok(movesOf(b3, 7, 3).includes('9,5'), '대각선에서 말을 넘어 포획 가능해야 함');
+  const b4 = build([
+    [7, 3, J.CHO, 'C'],
+    [8, 4, J.HAN, 'K'],   // 대각선 모자(적 장)
+    [9, 5, J.HAN, 'R'],
+  ]);
+  assert.ok(movesOf(b4, 7, 3).includes('9,5'), '대각선에서 장을 넘어 포획 가능해야 함');
+});
+
 test('炮(포): 포는 포를 잡지 못하고 포도 못 넘긴다', () => {
   const b = build([
     [5, 0, J.CHO, 'C'],   // 조사 대상

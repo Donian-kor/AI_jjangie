@@ -20,7 +20,10 @@ function decodeBase64(b64) {
 }
 
 async function boot(bundle) {
-  // 엔진 스크립트를 평가해 전역에 정의한다
+  // 엔진 스크립트를 평가해 전역에 정의한다.
+  // 신뢰 경계: bundle.engine 은 make-fsf-bundle.js 가 로컬 stockfish.js 로 생성한
+  // base64 이다. 이 파일(또는 번들)을 임의로 수정할 수 있으면 코드 실행이 가능하므로,
+  // 번들 생성·배포 경로를 신뢰할 수 있는 곳으로 유지한다.
   const src = new TextDecoder().decode(decodeBase64(bundle.engine));
   (0, eval)(src + '\nself.Stockfish = Stockfish;\n//# sourceURL=fs-stockfish.js');
   if (typeof self.Stockfish !== 'function') throw new Error('엔진 스크립트를 불러오지 못했습니다');

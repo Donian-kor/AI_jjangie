@@ -36,7 +36,10 @@ function makeCtx(over) {
     J,
     JanggiFS: FS,
     lang: 'hanja',
-    game: { board: J.initialBoard(), turn: J.CHO, result: { winner: 'C' } },
+    game: {
+      board: J.initialBoard(), turn: J.CHO, result: { winner: 'C' },
+      moves: function () { return J.legalMoves(this.board, this.turn); },
+    },
     review: { rows: [] },   // 페어플레이: 대국 종료 후 '복기'를 마친 상태가 기본
     vsHuman: false,
     humanSide: J.CHO,
@@ -176,14 +179,23 @@ async function testAsync(name, fn) {
 
 
 
-  test('표시: 추천 수는 지금 판에 있는 기물일 때만 보여 준다', () => {
+  test('표시: 추천 수가 지금 판에서 합법일 때만 보여 준다', () => {
     const ctx = makeCtx();
-    // a1 = 우리 좌표 (0,0) 에 한(검정) 차가 있다 → FS 좌표 a10? 아니, 우리 행0 = FS 1번 랭크
-    const mv = { fr: 0, fc: 0, tr: 3, tc: 4 };
+    // a1 → a2: 초 차(0,0)이 (1,0)으로 가는 합법 수
+    const mv = { fr: 0, fc: 0, tr: 1, tc: 0 };
     ctx.evalInfo = { cp: 50, uci: FS.moveToUci(mv), turn: J.CHO };
     ctx.renderEngineEval();
     assert.ok(/추천 수: /.test(ctx.engineEvalEl.innerHTML), ctx.engineEvalEl.innerHTML);
-    assert.ok(/車 1열 10줄 → 5열 7줄/.test(ctx.engineEvalEl.innerHTML), ctx.engineEvalEl.innerHTML);
+    assert.ok(/車 1열 10줄 → 1열 9줄/.test(ctx.engineEvalEl.innerHTML), ctx.engineEvalEl.innerHTML);
+  });
+
+  test('표시: 출발 칸에 기물이 있어도 합법이 아니면 추천 수를 보여 주지 않는다', () => {
+    const ctx = makeCtx();
+    // a1 → e4: 출발 칸엔 차가 있지만 그 경로는 막혀 있어 합법이 아니다
+    const mv = { fr: 0, fc: 0, tr: 3, tc: 4 };
+    ctx.evalInfo = { cp: 50, uci: FS.moveToUci(mv), turn: J.CHO };
+    ctx.renderEngineEval();
+    assert.ok(!/추천 수/.test(ctx.engineEvalEl.innerHTML), ctx.engineEvalEl.innerHTML);
   });
 
   test('표시: 빈 칸에서 출발하는 추천 수는 보여 주지 않는다', () => {
@@ -238,7 +250,7 @@ async function testAsync(name, fn) {
 
   await testAsync('새로고침: 엔진 답을 받아 점수와 추천 수를 보여 준다', async () => {
     const ctx = makeCtx();
-    ctx.engine = fakeEngine([{ cp: 220, mate: null, uci: 'a1e4' }]);
+    ctx.engine = fakeEngine([{ cp: 220, mate: null, uci: 'a1a2' }]);
     await ctx.refreshEngineEval();
     assert.strictEqual(ctx.engineEvalEl.hidden, false);
     assert.ok(/초 쪽 \+2\.2점 \(유리\)/.test(ctx.engineEvalEl.innerHTML), ctx.engineEvalEl.innerHTML);

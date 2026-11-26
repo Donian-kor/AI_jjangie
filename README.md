@@ -81,7 +81,7 @@ node tests/fs_engine_test.js
 
 ```
 장기게임/
-├── index.html                  # 게임 본체 (UI + 로직, ~2800줄)
+├── index.html                  # 게임 본체 (UI + 로직, ~3160줄)
 ├── janggi.js                   # 장기 규칙 엔진 (이동 생성, 장군/멍군/무승부, 저장·복원)
 ├── ai.js                       # 내장 폴백 AI (minimax + alpha-beta)
 ├── fs-engine.js                # Fairy-Stockfish 연동 (FEN 변환, UCI, 난이도 매핑)
