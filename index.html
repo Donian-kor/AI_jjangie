@@ -1162,7 +1162,9 @@
   function playMoveWithAnim(move, done) {
     const pc = game.board[move.fr][move.fc];
     const cap = game.board[move.tr][move.tc];
-    if (game.play(move) && game.result) recordFinish(game.result.winner);
+    // 규칙상 둘 수 없는 수(또는 이미 끝난 판)면 판을 건드리지 않고 애니메이션도 재생하지 않는다
+    if (!game.play(move)) { updateStatus(); refresh(); return; }
+    if (game.result) recordFinish(game.result.winner);
     saveGame();          // 이어하기: 둔 즉시 저장한다 (판이 끝났으면 지운다)
     playSound(cap ? 'capture' : 'move');
     if (game.check) {
@@ -2884,6 +2886,11 @@
     thinking = false;
     anim = null;
     hintMove = null;
+    hintUsed = 0;              // 이어 두기는 새 연습이므로 힌트·쿨다운 초기화
+    hintNextAt = 0;
+    clearTimeout(hintTimer);
+    hintTimer = 0;
+    resignCheckedAt = -1;      // 항복 평가도 새 국면에서 다시 시작
     clearSelection();
     humanMoves = 0;
     recCounted = false;
