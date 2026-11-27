@@ -662,16 +662,16 @@
           <option value="5">장기의 신</option>
         </select>
       </label>
-      <label class="fld aiLayout"><span>AI 차림</span>
-        <select id="aiLayoutSel" title="컴퓨터가 사용할 말 배치입니다 (사람끼리 대국에서는 쓰지 않습니다)">
+      <label class="fld aiLayout"><span id="aiLayoutLbl">AI 차림</span>
+        <select id="aiLayoutSel" title="컴퓨터가 사용할 말 배치입니다">
           <option value="masangsangma" selected>마상상마</option>
           <option value="sangmamasang">상마마상</option>
           <option value="masangmasang">마상마상</option>
           <option value="sangmasangma">상마상마</option>
         </select>
       </label>
-      <label class="fld mineLayout"><span>내 차림</span>
-        <select id="layoutSel">
+      <label class="fld mineLayout"><span id="myLayoutLbl">내 차림</span>
+        <select id="layoutSel" title="내가 사용할 말 배치입니다">
           <option value="masangsangma" selected>마상상마</option>
           <option value="sangmamasang">상마마상</option>
           <option value="masangmasang">마상마상</option>
@@ -711,7 +711,7 @@
       <button id="langBtn" title="한자 표기와 한글 표기를 바꿉니다">한글 표기</button>
       <button id="helpBtn" title="두는 방법과 규칙을 봅니다">도움말</button>
     </div>
-    <div class="locknote" id="lockNote">대국 중에는 진영·상대·난이도·차림·AI 차림을 바꿀 수 없습니다. 바꾸려면 <b>새 게임</b>을 누르세요.</div>
+    <div class="locknote" id="lockNote">대국 중에는 진영·상대·난이도·차림을 바꿀 수 없습니다. 바꾸려면 <b>새 게임</b>을 누르세요.</div>
   </div>
 </aside>
 <div id="pieceTip" hidden></div>
@@ -838,7 +838,7 @@
         <li><em>초보자 도움</em>을 켜면, 판 위의 말에 마우스를 올리거나 손가락으로 말을 눌렀을 때 그 말의 움직임 설명과 기물 가치가 작은 풍선으로 뜹니다.</li>
         <li>차례·장군(체크)·결과는 판 위의 안내 줄에 나옵니다.</li>
         <li><em>애기</em> 난이도에서는 상대 말을 눌러 보면 그 말이 갈 수 있는 곳이 파란 점으로 표시됩니다. (연습용이며 실제 수는 두지 않습니다)</li>
-        <li>대국이 시작된 뒤에는 내 색·상대·난이도·차림·AI 차림을 바꿀 수 없습니다. 바꾸려면 <em>새 게임</em>을 누르세요.</li>
+        <li>대국이 시작된 뒤에는 내 색·상대·난이도·차림을 바꿀 수 없습니다. 바꾸려면 <em>새 게임</em>을 누르세요.</li>
       </ul>
 
       <h3>이기고 지는 법</h3>
@@ -983,8 +983,20 @@
     sideSel.disabled = locked || vsHuman;
     levelSel.disabled = locked || vsHuman || challenge;   // 연승 도전 중에는 난이도가 자동으로 정해진다
     layoutSel.disabled = locked;
-    aiLayoutSel.disabled = locked || vsHuman;
+    aiLayoutSel.disabled = locked;   // 2인용에서도 한 차림을 따로 고를 수 있게
     oppSel.disabled = locked;
+    // 2인용에서는 아래쪽이 초로 고정되므로 두 선택칸을 '초 차림 / 한 차림'으로 바꿔 표시한다
+    if (vsHuman) {
+      myLayoutLbl.textContent = '초 차림';
+      aiLayoutLbl.textContent = '한 차림';
+      layoutSel.title = '초(파랑, 아래쪽)가 사용할 말 배치입니다';
+      aiLayoutSel.title = '한(빨강, 위쪽)이 사용할 말 배치입니다';
+    } else {
+      myLayoutLbl.textContent = '내 차림';
+      aiLayoutLbl.textContent = 'AI 차림';
+      layoutSel.title = '내가 사용할 말 배치입니다';
+      aiLayoutSel.title = '컴퓨터가 사용할 말 배치입니다';
+    }
     lockNote.className = 'locknote' + (locked ? ' on' : '');
     syncDefenseHints();
     syncDangerMarks();
@@ -1117,7 +1129,9 @@
   const sideSel = document.getElementById('sideSel');
   const levelSel = document.getElementById('levelSel');
   const layoutSel = document.getElementById('layoutSel');
+  const myLayoutLbl = document.getElementById('myLayoutLbl');
   const aiLayoutSel = document.getElementById('aiLayoutSel');
+  const aiLayoutLbl = document.getElementById('aiLayoutLbl');
   const oppSel = document.getElementById('oppSel');
   
   const lockNote = document.getElementById('lockNote');
@@ -2316,10 +2330,10 @@
     clearSelection();
     vsHuman = oppSel.value === 'human';
     humanSide = vsHuman ? J.CHO : (sideSel.value === 'H' ? J.HAN : J.CHO);
-    // 내 진영은 선택한 차림, AI는 기본(마상상마).
-    // 사람끼리 대국에서는 고른 차림을 양쪽에 똑같이 적용한다.
+    // 2인용: 아래쪽 초는 layoutSel, 위쪽 한은 aiLayoutSel 차림을 각각 사용한다.
+    // AI 대국: 내 진영은 layoutSel, AI는 aiLayoutSel 차림을 사용한다.
     game = vsHuman
-      ? new J.Game({ layoutCho: layoutSel.value, layoutHan: layoutSel.value })
+      ? new J.Game({ layoutCho: layoutSel.value, layoutHan: aiLayoutSel.value })
       : new J.Game({
         layoutCho: humanSide === J.CHO ? layoutSel.value : aiLayoutSel.value,
         layoutHan: humanSide === J.HAN ? layoutSel.value : aiLayoutSel.value,
